@@ -1,11 +1,11 @@
 import React from "react";
 import { Container, Box, Typography } from "@mui/material";
-import FlightSearch from "../user_service/FlightSearch";
+import FlightSearchMainPage from "../user_service/FlightSearchMainPage";
 
 const HomePage = () => {
   return (
     <>
-      <FlightSearch />
+      <FlightSearchMainPage />
     </>
   );
 };

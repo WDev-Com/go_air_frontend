@@ -5,23 +5,43 @@ import Signup from "./auth/Signup";
 import Navbar from "./component/Navbar";
 import GoAirlineFooter from "./component/GoAirlineFooter";
 import HomePage from "./pages/HomePage";
-import FlightSearchPage from "./user_service/FlightSearchPage";
+import FlightBookingPage from "./user_service/FlightBookingPage";
+import BookingCompleted from "./user_service/components/BookingCompleted";
+import FlightSearchResultPage from "./user_service/FlightSearchResultPage";
+import ProtectedUser from "./auth/ProtectedUser";
+
 const router = createBrowserRouter([
   {
     path: "/",
-    element: <HomePage />,
+    element: <HomePage />, // Public
   },
   {
     path: "/flight-search-results",
-    element: <FlightSearchPage />,
+    element: <FlightSearchResultPage />, // Public
   },
   {
     path: "/login",
-    element: <Login />,
+    element: <Login />, // Public
   },
   {
     path: "/signup",
-    element: <Signup />,
+    element: <Signup />, // Public
+  },
+  {
+    path: "/book/:flightNumber",
+    element: (
+      <ProtectedUser>
+        <FlightBookingPage />
+      </ProtectedUser>
+    ),
+  },
+  {
+    path: "/booking-completed",
+    element: (
+      <ProtectedUser>
+        <BookingCompleted />
+      </ProtectedUser>
+    ),
   },
   {
     path: "*",

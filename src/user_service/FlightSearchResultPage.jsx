@@ -2,8 +2,8 @@ import React, { useEffect, useState, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useLocation } from "react-router-dom";
 import { fetchFlights, selectFlights, selectLoading } from "./userSlice";
-import FilterSidebar from "./FilterSidebar";
-import FlightResults from "./FlightResults";
+import FilterSidebar from "./components/FilterSidebar";
+import FlightResults from "./components/FlightResults";
 import {
   Box,
   CircularProgress,
@@ -13,17 +13,17 @@ import {
 } from "@mui/material";
 import EditableSummaryBar from "./components/EditableSummaryBar";
 
-const FlightSearchPage = () => {
+const FlightSearchResultPage = () => {
   const dispatch = useDispatch();
   const flights = useSelector(selectFlights);
   const loading = useSelector(selectLoading);
   const isFirstLoad = useRef(true);
   const location = useLocation();
 
-  // ✅ Get search params from navigation
+  // Get search params from navigation
   const formData = location.state?.searchParams || {};
 
-  // ✅ Initial filters state
+  // Initial filters state
   const [filters, setFilters] = useState({
     tripType: "ONE_WAY",
     sourceAirports: "",
@@ -47,7 +47,7 @@ const FlightSearchPage = () => {
     },
   });
 
-  // ✅ Merge incoming form data
+  // Merge incoming form data
   useEffect(() => {
     if (Object.keys(formData).length > 0) {
       const { travellers = {}, ...rest } = formData;
@@ -71,7 +71,7 @@ const FlightSearchPage = () => {
     }
   }, [formData]);
 
-  // ✅ Fetch flights API
+  // Fetch flights API
   const handleSearch = async (params = filters) => {
     if (!params.sourceAirports || !params.destinationAirports) {
       console.warn("❌ Missing required parameters. Skipping API call.");
@@ -84,7 +84,7 @@ const FlightSearchPage = () => {
       )
     );
 
-    console.log("🚀 Searching flights with:", cleanParams);
+    // console.log("🚀 Searching flights with:", cleanParams);
     try {
       await dispatch(fetchFlights(cleanParams)).unwrap();
     } catch (error) {
@@ -151,7 +151,8 @@ const FlightSearchPage = () => {
                 <CircularProgress />
               </Box>
             ) : flights && Object.keys(flights).length > 0 ? (
-              <FlightResults flights={flights} />
+              // ✅ FlightResults component
+              <FlightResults flights={flights} filters={filters} />
             ) : (
               <Typography
                 variant="body1"
@@ -168,4 +169,4 @@ const FlightSearchPage = () => {
   );
 };
 
-export default FlightSearchPage;
+export default FlightSearchResultPage;
