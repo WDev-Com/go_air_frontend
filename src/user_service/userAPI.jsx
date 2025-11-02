@@ -1,3 +1,5 @@
+import { toast } from "react-toastify";
+
 export const searchFlightsAPI = async (params) => {
   // ✅ Remove empty/undefined/null values
   const filteredParams = Object.fromEntries(
@@ -125,6 +127,63 @@ export const getSeatsByFlightNumberAPI = async (flightNumber) => {
     return await response.json();
   } catch (err) {
     console.error("❌ getSeatsByFlightNumberAPI Error:", err);
+    throw err;
+  }
+};
+
+// ✅ Update user details by username
+export const updateUserAPI = async (username, updatedData) => {
+  const response = await fetch(
+    `http://localhost:8080/auth/updateuser/${username}`,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(updatedData),
+    }
+  );
+
+  if (response.ok) {
+    toast.success("User details updated successfully");
+  }
+
+  if (!response.ok) {
+    toast.error("Failed to update user details");
+    throw new Error("Failed to update user details");
+  }
+
+  return await response.json();
+};
+
+// ✅ Get all bookings for a user
+export const getUserBookings = async (userId) => {
+  try {
+    const res = await fetch(`${BASE_URL}/user/bookings/${userId}`);
+
+    if (!res.ok) throw new Error("Failed to fetch user bookings");
+
+    const data = await res.json(); // ✅ read JSON once
+    // console.log("Fetched user bookings:", data);
+
+    return data;
+  } catch (err) {
+    console.error("Error fetching user bookings:", err);
+    throw err;
+  }
+};
+
+// ✅ Get tickets for a specific booking
+export const getUserTickets = async (userId, bookingId) => {
+  try {
+    // console.log(
+    //   `Fetching tickets for userId: ${userId}, bookingId: ${bookingId}`
+    // );
+    const res = await fetch(`${BASE_URL}/user/tickets/${userId}/${bookingId}`);
+    if (!res.ok) throw new Error("Failed to fetch tickets");
+    return await res.json();
+  } catch (err) {
+    console.error(err);
     throw err;
   }
 };

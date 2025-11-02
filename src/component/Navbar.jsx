@@ -11,21 +11,24 @@ import {
   Paper,
   Menu,
   MenuItem,
-  ClickAwayListener, // 👈 import added
+  ClickAwayListener,
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import FlightTakeoffIcon from "@mui/icons-material/FlightTakeoff";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import { useSelector } from "react-redux";
+import { selectUser } from "../auth/authSlice"; // ✅ import selector
+import { Link, useNavigate } from "react-router-dom"; // ✅ for navigation
 
 const pages = [
   { name: "Home", path: "/" },
   {
     name: "Flights",
-    subMenu: ["Search Flights", "Flight Status", "Special Offers"],
+    path: "/flights",
   },
   {
     name: "Bookings",
-    subMenu: ["My Bookings", "Manage Booking", "Cancel Ticket"],
+    path: "/bookings",
   },
   { name: "Check-in", path: "/checkin" },
   { name: "About", path: "/about" },
@@ -34,7 +37,10 @@ const pages = [
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState(null);
-  const [anchorEl, setAnchorEl] = useState(null); // For avatar menu
+  const [anchorEl, setAnchorEl] = useState(null);
+
+  const user = useSelector(selectUser);
+  const navigate = useNavigate();
 
   const toggleMobileMenu = () => setMobileMenuOpen(!mobileMenuOpen);
   const toggleDropdown = (index) =>
@@ -49,7 +55,6 @@ export default function Navbar() {
   };
 
   const handleClickAway = () => {
-    // 👇 Close menu when user clicks outside
     if (mobileMenuOpen) {
       setMobileMenuOpen(false);
       setActiveDropdown(null);
@@ -58,36 +63,34 @@ export default function Navbar() {
 
   return (
     <Box sx={{ position: "relative" }}>
-      {/* ===== Top Navbar ===== */}
       <AppBar
         position="static"
         sx={{ backgroundColor: "#004aad", zIndex: 1300 }}
       >
         <Toolbar sx={{ justifyContent: "space-between" }}>
-          {/* Left Section */}
+          {/* ===== Left Section ===== */}
           <Box sx={{ display: "flex", alignItems: "center" }}>
             <FlightTakeoffIcon
               sx={{ mr: 1, display: { xs: "none", md: "flex" } }}
             />
-            <Typography
-              variant="h6"
-              noWrap
-              component="a"
-              href="/"
-              sx={{
-                mr: 2,
-                display: { xs: "none", md: "flex" },
-                fontFamily: "monospace",
-                fontWeight: 700,
-                letterSpacing: ".1rem",
-                color: "inherit",
-                textDecoration: "none",
-              }}
-            >
-              GoAirline
-            </Typography>
+            <Link to="/" style={{ textDecoration: "none", color: "inherit" }}>
+              <Typography
+                variant="h6"
+                noWrap
+                sx={{
+                  mr: 2,
+                  display: { xs: "none", md: "flex" },
+                  fontFamily: "monospace",
+                  fontWeight: 700,
+                  letterSpacing: ".1rem",
+                  color: "inherit",
+                }}
+              >
+                GoAirline
+              </Typography>
+            </Link>
 
-            {/* Mobile Menu Icon */}
+            {/* ===== Mobile Menu Icon ===== */}
             <IconButton
               color="inherit"
               onClick={toggleMobileMenu}
@@ -96,7 +99,6 @@ export default function Navbar() {
               <MenuIcon />
             </IconButton>
 
-            {/* Mobile Logo */}
             <Typography
               variant="h6"
               sx={{
@@ -111,120 +113,154 @@ export default function Navbar() {
             </Typography>
           </Box>
 
-          {/* Desktop Menu */}
+          {/* ===== Desktop Menu ===== */}
           <Box sx={{ display: { xs: "none", md: "flex" }, gap: 2 }}>
-            {pages.map((page) => (
-              <Button key={page.name} sx={{ color: "white" }}>
+            {pages.map((page, index) => (
+              <Button
+                key={page.name}
+                component={Link}
+                to={page.path}
+                sx={{
+                  color: "white",
+                  textTransform: "none",
+                  fontWeight: 600,
+                }}
+              >
                 {page.name}
               </Button>
             ))}
           </Box>
 
-          {/* Avatar */}
-          <Box>
-            <IconButton onClick={handleAvatarClick}>
-              <Avatar alt="User" src="/static/images/avatar/2.jpg" />
-            </IconButton>
+          {/* ===== Right Section ===== */}
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            {user ? (
+              <>
+                <IconButton onClick={handleAvatarClick}>
+                  <Avatar
+                    alt={user?.name || "User"}
+                    src="/static/images/avatar/2.jpg"
+                  />
+                </IconButton>
 
-            {/* ===== User Menu ===== */}
-            <Menu
-              anchorEl={anchorEl}
-              open={Boolean(anchorEl)}
-              onClose={handleMenuClose}
-              anchorOrigin={{
-                vertical: "bottom",
-                horizontal: "right",
-              }}
-              transformOrigin={{
-                vertical: "top",
-                horizontal: "right",
-              }}
-            >
-              <MenuItem onClick={handleMenuClose}>Profile</MenuItem>
-              <MenuItem onClick={handleMenuClose}>My Account</MenuItem>
-              <MenuItem onClick={handleMenuClose}>Logout</MenuItem>
-            </Menu>
+                <Menu
+                  anchorEl={anchorEl}
+                  open={Boolean(anchorEl)}
+                  onClose={handleMenuClose}
+                  anchorOrigin={{
+                    vertical: "bottom",
+                    horizontal: "right",
+                  }}
+                  transformOrigin={{
+                    vertical: "top",
+                    horizontal: "right",
+                  }}
+                >
+                  <MenuItem
+                    onClick={() => {
+                      navigate("/my-account");
+                      handleMenuClose();
+                    }}
+                  >
+                    My Account
+                  </MenuItem>
+
+                  {/* ✅ New “View Tickets” Button */}
+                  <MenuItem
+                    onClick={() => {
+                      navigate(`/user/tickets/${user.id}`);
+                      handleMenuClose();
+                    }}
+                  >
+                    View Tickets
+                  </MenuItem>
+
+                  <MenuItem
+                    onClick={() => {
+                      handleMenuClose();
+                      // your logout logic here
+                    }}
+                  >
+                    Logout
+                  </MenuItem>
+                </Menu>
+              </>
+            ) : (
+              <>
+                <Button
+                  color="inherit"
+                  onClick={() => navigate("/login")}
+                  sx={{ fontWeight: 600 }}
+                >
+                  Login
+                </Button>
+                <Button
+                  variant="contained"
+                  onClick={() => navigate("/signup")}
+                  sx={{
+                    fontWeight: 600,
+                    backgroundColor: "#42a5f5",
+                    "&:hover": { backgroundColor: "#108ff7ff" },
+                    color: "white",
+                  }}
+                >
+                  Signup
+                </Button>
+              </>
+            )}
           </Box>
         </Toolbar>
       </AppBar>
 
-      {/* ===== Relative Dropdown Menu (Mobile Only) ===== */}
+      {/* ===== Mobile Dropdown Menu ===== */}
       {mobileMenuOpen && (
-        <ClickAwayListener onClickAway={handleClickAway}>
-          <Paper
-            elevation={6}
-            sx={{
-              position: "absolute",
-              top: "100%",
-              left: 0,
-              right: 0,
-              zIndex: 1200,
-              backgroundColor: "#f0f4ff",
-              display: { xs: "block", md: "none" },
-            }}
-          >
-            {pages.map((page, i) => (
-              <Box key={page.name}>
-                {/* Parent Item */}
-                <Box
-                  sx={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    px: 2,
-                    py: 1.5,
-                    cursor: "pointer",
-                    "&:hover": { backgroundColor: "#e0eaff" },
-                  }}
-                  onClick={() =>
-                    page.subMenu ? toggleDropdown(i) : setMobileMenuOpen(false)
-                  }
-                >
-                  <Typography variant="subtitle1" fontWeight={600}>
-                    {page.name}
-                  </Typography>
-                  {page.subMenu && (
-                    <ExpandMoreIcon
-                      sx={{
-                        transform:
-                          activeDropdown === i
-                            ? "rotate(180deg)"
-                            : "rotate(0deg)",
-                        transition: "0.3s",
-                      }}
-                    />
-                  )}
-                </Box>
-
-                {/* Dropdown Items */}
-                {page.subMenu && (
-                  <Collapse
-                    in={activeDropdown === i}
-                    timeout="auto"
-                    unmountOnExit
+        <Paper
+          elevation={6}
+          sx={{
+            position: "absolute",
+            top: "100%",
+            left: 0,
+            right: 0,
+            zIndex: 1200,
+            backgroundColor: "#f0f4ff",
+            display: { xs: "block", md: "none" },
+          }}
+        >
+          <ClickAwayListener onClickAway={handleClickAway}>
+            <Box>
+              {pages.map((page, i) => (
+                <Box key={page.name}>
+                  <Box
+                    component={Link}
+                    to={page.path}
+                    sx={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      px: 2,
+                      py: 1.5,
+                      cursor: "pointer",
+                      color: "inherit", // ✅ keeps text color consistent
+                      textDecoration: "none", // ✅ removes underline
+                      "&:hover": {
+                        backgroundColor: "#e0eaff",
+                        textDecoration: "none", // ✅ ensures hover doesn’t re-add underline
+                      },
+                    }}
+                    onClick={() =>
+                      page.subMenu
+                        ? toggleDropdown(i)
+                        : setMobileMenuOpen(false)
+                    }
                   >
-                    <Box sx={{ pl: 4, pb: 1 }}>
-                      {page.subMenu.map((sub, idx) => (
-                        <Typography
-                          key={idx}
-                          variant="body2"
-                          sx={{
-                            py: 0.8,
-                            cursor: "pointer",
-                            "&:hover": { color: "#004aad", fontWeight: 600 },
-                          }}
-                          onClick={() => setMobileMenuOpen(false)}
-                        >
-                          {sub}
-                        </Typography>
-                      ))}
-                    </Box>
-                  </Collapse>
-                )}
-              </Box>
-            ))}
-          </Paper>
-        </ClickAwayListener>
+                    <Typography variant="subtitle1" fontWeight={600}>
+                      {page.name}
+                    </Typography>
+                  </Box>
+                </Box>
+              ))}
+            </Box>
+          </ClickAwayListener>
+        </Paper>
       )}
     </Box>
   );

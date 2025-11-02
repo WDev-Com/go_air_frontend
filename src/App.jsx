@@ -1,5 +1,5 @@
 import React from "react";
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import { createBrowserRouter, RouterProvider, Outlet } from "react-router-dom";
 import Login from "./auth/Login";
 import Signup from "./auth/Signup";
 import Navbar from "./component/Navbar";
@@ -9,54 +9,76 @@ import FlightBookingPage from "./user_service/FlightBookingPage";
 import BookingCompleted from "./user_service/components/BookingCompleted";
 import FlightSearchResultPage from "./user_service/FlightSearchResultPage";
 import ProtectedUser from "./auth/ProtectedUser";
+import MyAccountPage from "./user_service/MyAccountPage ";
+import BookingsPage from "./user_service/ViewBookingsPage";
+import ViewTicketsPage from "./user_service/ViewTicketsPage";
+
+// ✅ Layout component that wraps Navbar + Outlet + Footer
+function Layout() {
+  return (
+    <>
+      <Navbar />
+      <Outlet /> {/* child routes render here */}
+      <GoAirlineFooter />
+    </>
+  );
+}
 
 const router = createBrowserRouter([
   {
-    path: "/",
-    element: <HomePage />, // Public
-  },
-  {
-    path: "/flight-search-results",
-    element: <FlightSearchResultPage />, // Public
-  },
-  {
-    path: "/login",
-    element: <Login />, // Public
-  },
-  {
-    path: "/signup",
-    element: <Signup />, // Public
-  },
-  {
-    path: "/book/:flightNumber",
-    element: (
-      <ProtectedUser>
-        <FlightBookingPage />
-      </ProtectedUser>
-    ),
-  },
-  {
-    path: "/booking-completed",
-    element: (
-      <ProtectedUser>
-        <BookingCompleted />
-      </ProtectedUser>
-    ),
-  },
-  {
-    path: "*",
-    element: <HomePage />,
+    element: <Layout />, // ✅ Navbar + Footer inside this layout
+    children: [
+      { path: "/", element: <HomePage /> },
+      { path: "/flight-search-results", element: <FlightSearchResultPage /> },
+      { path: "/login", element: <Login /> },
+      { path: "/signup", element: <Signup /> },
+      {
+        path: "/book/:flightNumber",
+        element: (
+          <ProtectedUser>
+            <FlightBookingPage />
+          </ProtectedUser>
+        ),
+      },
+      {
+        path: "/bookings",
+        element: (
+          <ProtectedUser>
+            <BookingsPage />
+          </ProtectedUser>
+        ),
+      },
+      {
+        path: "/tickets/:bookingId",
+        element: (
+          <ProtectedUser>
+            <ViewTicketsPage />
+          </ProtectedUser>
+        ),
+      },
+      {
+        path: "/my-account",
+        element: (
+          <ProtectedUser>
+            <MyAccountPage />
+          </ProtectedUser>
+        ),
+      },
+      {
+        path: "/booking-completed",
+        element: (
+          <ProtectedUser>
+            <BookingCompleted />
+          </ProtectedUser>
+        ),
+      },
+      { path: "*", element: <HomePage /> },
+    ],
   },
 ]);
 
 function App() {
-  return (
-    <div className="App">
-      <Navbar />
-      <RouterProvider router={router} />
-      <GoAirlineFooter />
-    </div>
-  );
+  return <RouterProvider router={router} />;
 }
 
 export default App;

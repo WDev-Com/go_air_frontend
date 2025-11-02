@@ -6,7 +6,58 @@ import {
   getFlightByNumberAPI,
   bookFlightAPI,
   getSeatsByFlightNumberAPI,
+  updateUserAPI,
+  getUserBookings,
+  getUserTickets,
 } from "./userAPI";
+
+// ✅ Fetch user bookings
+export const fetchUserBookings = createAsyncThunk(
+  "user/fetchUserBookings",
+  async (_, { getState, rejectWithValue }) => {
+    try {
+      const state = getState();
+      const user = selectUserDetails(state);
+      // console.log("Fetching bookings for user:", user?.userID);
+
+      if (!user?.userID) return rejectWithValue("User ID not found");
+
+      const data = await getUserBookings(user.userID);
+      return data;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+// ✅ Fetch user tickets for a booking
+export const fetchUserTickets = createAsyncThunk(
+  "user/fetchUserTickets",
+  async (bookingId, { getState, rejectWithValue }) => {
+    try {
+      const state = getState();
+      const user = selectUserDetails(state);
+      if (!user?.userID) return rejectWithValue("User ID not found");
+      const data = await getUserTickets(user.userID, bookingId);
+      return data;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+// ✅ Update user details
+export const updateUser = createAsyncThunk(
+  "user/updateUser",
+  async ({ username, updatedData }, { rejectWithValue }) => {
+    try {
+      const data = await updateUserAPI(username, updatedData);
+      return data;
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
+  }
+);
 
 // ✅ Fetch seats by flight number
 export const fetchSeatsByFlightNumber = createAsyncThunk(
@@ -80,6 +131,9 @@ const userSlice = createSlice({
     userDetails: null,
     flightDetails: null,
     bookingResponse: null,
+    bookings: [],
+    tickets: [],
+    seats: [],
     loading: false,
     error: null,
   },
@@ -149,6 +203,45 @@ const userSlice = createSlice({
       .addCase(fetchSeatsByFlightNumber.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+      })
+
+      // ----- Update User -----
+      .addCase(updateUser.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(updateUser.fulfilled, (state, action) => {
+        state.loading = false;
+        state.userDetails = action.payload; // update local state
+      })
+      .addCase(updateUser.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      // ✅ Bookings
+      .addCase(fetchUserBookings.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchUserBookings.fulfilled, (state, action) => {
+        state.loading = false;
+        state.bookings = action.payload;
+      })
+      .addCase(fetchUserBookings.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      // ✅ Tickets
+      .addCase(fetchUserTickets.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchUserTickets.fulfilled, (state, action) => {
+        state.loading = false;
+        state.tickets = action.payload;
+      })
+      .addCase(fetchUserTickets.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
       });
   },
 });
@@ -161,3 +254,5 @@ export const selectUserDetails = (state) => state.user.userDetails;
 export const selectFlightDetails = (state) => state.user.flightDetails;
 export const selectBookingResponse = (state) => state.user.bookingResponse;
 export const selectSeats = (state) => state.user.seats;
+export const selectUserBookings = (state) => state.user.bookings;
+export const selectUserTickets = (state) => state.user.tickets;
