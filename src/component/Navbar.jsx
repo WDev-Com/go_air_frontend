@@ -23,10 +23,6 @@ import { Link, useNavigate } from "react-router-dom"; // ✅ for navigation
 const pages = [
   { name: "Home", path: "/" },
   {
-    name: "Flights",
-    path: "/flights",
-  },
-  {
     name: "Bookings",
     path: "/bookings",
   },
@@ -167,11 +163,11 @@ export default function Navbar() {
                   {/* ✅ New “View Tickets” Button */}
                   <MenuItem
                     onClick={() => {
-                      navigate(`/user/tickets/${user.id}`);
+                      navigate(`/bookings`);
                       handleMenuClose();
                     }}
                   >
-                    View Tickets
+                    View Booking
                   </MenuItem>
 
                   <MenuItem

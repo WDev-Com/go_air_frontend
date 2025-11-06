@@ -1,18 +1,27 @@
 import React, { useEffect, useState } from "react";
 import {
   Box,
+  Card,
   CardContent,
   Typography,
+  TextField,
   Button,
+  Grid,
+  MenuItem,
   Divider,
   IconButton,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
 } from "@mui/material";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import {
   fetchUserByUsername,
+  fetchFlightByNumber,
   bookFlight,
   selectUserDetails,
   selectFlightDetails,
@@ -41,7 +50,7 @@ const FlightBookingPage = () => {
   const flight = useSelector(selectFlightDetails);
   const loading = useSelector(selectLoading);
   const seats = useSelector(selectSeats);
-  // console.log(user);
+
   // === MULTI CITY STATE ===
   const routeKeys = Object.keys(selectedFlights);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -64,7 +73,8 @@ const FlightBookingPage = () => {
   };
 
   const defaultPassenger = {
-    name: "",
+    firstName: "",
+    lastName: "",
     gender: "",
     age: "",
     seatNo: "",
@@ -78,6 +88,7 @@ const FlightBookingPage = () => {
       ? [selectedFlights?.flightNumber ? selectedFlights : {}]
       : Object.values(selectedFlights)
     ).map((flight) => ({
+      id: null,
       bookingNo: bookingNo, // same alphanumeric for all flights
       flightNumber: flight.flightNumber || "",
       aircraftSize: flight.aircraftSize || "",
@@ -88,8 +99,8 @@ const FlightBookingPage = () => {
       arrivalTime: flight.arrivalTime || "",
       arrivalDate: flight.arrivalDate || "",
 
-      contactEmail: user ? user.email : "",
-      contactPhone: user ? user.contact : "",
+      contactEmail: "",
+      contactPhone: "",
 
       bookingTime: new Date().toISOString(),
       passengerCount: filters.passengers ? parseInt(filters.passengers) : 1,
@@ -121,150 +132,87 @@ const FlightBookingPage = () => {
 
   // === SYNC CONTACT INFO FROM USER ===
   useEffect(() => {
-    if (user && bookings.length > 0) {
-      setBookings((prevBookings) =>
-        prevBookings.map((booking) => ({
-          ...booking,
-          contactEmail: user.email || "",
-          contactPhone: user.contact || "",
-        }))
-      );
+    if (user) {
+      setBookings((prev) => ({
+        ...prev,
+        contactEmail: user.email || "",
+        contactPhone: user.contact || "",
+      }));
     }
   }, [user]);
 
-  // console.log("From FBP page ", bookings);
-
   // === PASSENGER HANDLERS ===
   const handlePassengerChange = (index, field, value) => {
-    setBookings((prevBookings) => {
-      const updatedBookings = [...prevBookings];
-      const bookingToUpdate =
-        tripType === "ONE_WAY"
-          ? { ...updatedBookings[0] }
-          : { ...updatedBookings[currentIndex] };
-      const updatedPassengers = [...bookingToUpdate.passengers];
-      updatedPassengers[index][field] = value;
-      bookingToUpdate.passengers = updatedPassengers;
-      if (tripType === "ONE_WAY") updatedBookings[0] = bookingToUpdate;
-      else updatedBookings[currentIndex] = bookingToUpdate;
-      return updatedBookings;
+    setBookings((prev) => {
+      const updated = [...prev.passengers];
+      updated[index][field] = value;
+      return { ...prev, passengers: updated };
     });
   };
 
   const addPassenger = () => {
-    setBookings((prevBookings) => {
-      const updatedBookings = [...prevBookings];
-      const bookingToUpdate =
-        tripType === "ONE_WAY"
-          ? { ...updatedBookings[0] }
-          : { ...updatedBookings[currentIndex] };
-      bookingToUpdate.passengers = [
-        ...bookingToUpdate.passengers,
-        { ...defaultPassenger },
-      ];
-      bookingToUpdate.passengerCount = bookingToUpdate.passengers.length;
-      if (tripType === "ONE_WAY") updatedBookings[0] = bookingToUpdate;
-      else updatedBookings[currentIndex] = bookingToUpdate;
-      return updatedBookings;
-    });
+    setBookings((prev) => ({
+      ...prev,
+      passengers: [...prev.passengers, { ...defaultPassenger }],
+      passengerCount: prev.passengerCount + 1,
+    }));
   };
 
   const removePassenger = (index) => {
-    setBookings((prevBookings) => {
-      const updatedBookings = [...prevBookings];
-      const bookingToUpdate =
-        tripType === "ONE_WAY"
-          ? { ...updatedBookings[0] }
-          : { ...updatedBookings[currentIndex] };
-      bookingToUpdate.passengers = bookingToUpdate.passengers.filter(
-        (_, i) => i !== index
-      );
-      bookingToUpdate.passengerCount = bookingToUpdate.passengers.length;
-      if (tripType === "ONE_WAY") updatedBookings[0] = bookingToUpdate;
-      else updatedBookings[currentIndex] = bookingToUpdate;
-      return updatedBookings;
+    setBookings((prev) => {
+      const updated = prev.passengers.filter((_, i) => i !== index);
+      return { ...prev, passengers: updated, passengerCount: updated.length };
     });
   };
 
-  // === SEAT SELECTION (cyclic, fully reselectable for all passengers) ===
-  const handleSeatSelect = (rawSeatNumber) => {
-    const seatNumber = rawSeatNumber == null ? "" : String(rawSeatNumber);
+  // === SEAT SELECTION ===
+  const handleSeatSelect = (seatNumber) => {
+    if (!seatNumber) return;
 
-    setBookings((prevBookings) => {
-      if (!Array.isArray(prevBookings)) return prevBookings;
+    setBookings((prevBooking) => {
+      // Copy current passengers
+      const updatedPassengers = [...prevBooking.passengers];
 
-      // Deep copy bookings and passengers
-      const updatedBookings = prevBookings.map((b) => ({
-        ...b,
-        passengers: Array.isArray(b.passengers)
-          ? b.passengers.map((p) => ({ ...p }))
-          : [],
-      }));
+      // Check if the seat is already selected by any passenger
+      const alreadySelected = updatedPassengers.some(
+        (p) => p.seatNo === seatNumber
+      );
 
-      const targetIndex = tripType === "ONE_WAY" ? 0 : currentIndex;
-      const booking = updatedBookings[targetIndex];
-      if (!booking || !Array.isArray(booking.passengers)) return prevBookings;
-
-      const passengers = booking.passengers;
-      const passengerCount = passengers.length;
-
-      // Get currently selected seats
-      let currentSelectedSeats = passengers
-        .map((p) => p.seatNo)
-        .filter((s) => s && s !== "");
-
-      const seatIndex = currentSelectedSeats.indexOf(seatNumber);
-
-      if (seatIndex !== -1) {
-        // Seat already selected → deselect
-        currentSelectedSeats.splice(seatIndex, 1);
+      if (alreadySelected) {
+        // Deselect the seat (remove from whoever has it)
+        updatedPassengers.forEach((p) => {
+          if (p.seatNo === seatNumber) p.seatNo = "";
+        });
       } else {
-        // Seat is new
-        if (currentSelectedSeats.length < passengerCount) {
-          // There is free passenger → just push
-          currentSelectedSeats.push(seatNumber);
-        } else {
-          // All passengers already have seats → remove oldest (cyclic)
-          currentSelectedSeats.shift();
-          currentSelectedSeats.push(seatNumber);
-        }
+        // Assign seat to the next passenger without one
+        const nextUnassigned = updatedPassengers.find((p) => !p.seatNo);
+        if (nextUnassigned) nextUnassigned.seatNo = seatNumber;
       }
 
-      // Reassign seats to passengers in order
-      passengers.forEach((p, i) => {
-        p.seatNo = currentSelectedSeats[i] || "";
-      });
-
-      booking.passengers = passengers;
-      updatedBookings[targetIndex] = booking;
-
-      return updatedBookings;
+      // Return updated booking object
+      return {
+        ...prevBooking,
+        passengers: updatedPassengers,
+      };
     });
   };
 
-  // === FORM COMPLETION CHECK ===
-  const currentBooking =
-    Array.isArray(bookings) && bookings.length > 0
-      ? tripType === "ONE_WAY"
-        ? bookings[0]
-        : bookings[currentIndex] || { passengers: [] }
-      : { passengers: [] };
-
-  // === Ensure passengers array exists ===
-  const passengers = Array.isArray(currentBooking.passengers)
-    ? currentBooking.passengers
-    : [];
-  console.log("Current Booking:", currentBooking);
   // === FORM VALIDATION ===
-  const isFormComplete =
-    passengers.length > 0 &&
-    passengers.every(
-      (p) => !!p.name?.trim() && !!p.age && !!p.gender && !!p.seatNo
-    );
+  const isFormComplete = bookings.passengers.every(
+    (p) =>
+      p.name.trim() &&
+      p.age &&
+      p.gender !== "SELECT GENDER" &&
+      p.passportNumber.trim() &&
+      p.seatNo
+  );
 
-  // === FILLED INFO COUNT ===
-  const filledInfoCount = passengers.filter(
-    (p) => !!p.name?.trim() && !!p.age && !!p.gender
+  const filledInfoCount = bookings.passengers.filter(
+    (p) =>
+      p.name.trim() &&
+      p.age &&
+      p.gender !== "SELECT GENDER" &&
+      p.passportNumber.trim()
   ).length;
 
   // === NAVIGATION BETWEEN FLIGHTS (no reload) ===
@@ -320,27 +268,16 @@ const FlightBookingPage = () => {
       />
 
       {/* === CONTACT INFO === */}
-      <ContactInformationCard
-        booking={bookings[currentIndex]}
-        setBooking={setBookings}
-        currentIndex={currentIndex}
-        tripType={tripType}
-      />
+      <ContactInformationCard booking={bookings} setBooking={setBookings} />
 
       {/* === PASSENGER FORM === */}
-      {bookings[currentIndex]?.passengers ? (
-        <PassengerForm
-          passengers={bookings[currentIndex].passengers}
-          onPassengerChange={handlePassengerChange}
-          onAddPassenger={addPassenger}
-          onRemovePassenger={removePassenger}
-          filledInfoCount={filledInfoCount}
-        />
-      ) : (
-        <Typography sx={{ my: 2, color: "gray", textAlign: "center" }}>
-          Loading passenger details...
-        </Typography>
-      )}
+      <PassengerForm
+        passengers={bookings.passengers}
+        onPassengerChange={handlePassengerChange}
+        onAddPassenger={addPassenger}
+        onRemovePassenger={removePassenger}
+        filledInfoCount={filledInfoCount}
+      />
 
       {/* === SEAT MAP === */}
       <CardContent
@@ -372,7 +309,7 @@ const FlightBookingPage = () => {
           <SeatMap
             seats={seats}
             aircraftSize={currentFlight?.aircraftSize}
-            selectedSeats={(bookings[currentIndex]?.passengers || [])
+            selectedSeats={bookings.passengers
               .map((p) => p.seatNo)
               .filter(Boolean)}
             onSeatSelect={handleSeatSelect}
