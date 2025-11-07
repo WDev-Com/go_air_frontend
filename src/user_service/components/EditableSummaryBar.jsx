@@ -229,7 +229,8 @@ const EditableSummaryBar = ({ values = {}, onApply }) => {
           <ToggleButton value="STUDENT">Student</ToggleButton>
           <ToggleButton value="ARMED_FORCES">Armed Forces</ToggleButton>
           <ToggleButton value="SENIOR_CITIZEN">Senior Citizen</ToggleButton>
-          <ToggleButton value="DOCTOR_NURSES">Doctor & Nurses</ToggleButton>
+          <ToggleButton value="DOCTOR_AND_NURSES">Doctor & Nurses</ToggleButton>
+          <ToggleButton value="FAMILY">Family</ToggleButton>
         </ToggleButtonGroup>
         <Button
           variant="contained"
@@ -478,9 +479,10 @@ const EditableSummaryBar = ({ values = {}, onApply }) => {
                 <ToggleButton value="SENIOR_CITIZEN">
                   Senior Citizen
                 </ToggleButton>
-                <ToggleButton value="DOCTOR_NURSES">
+                <ToggleButton value="DOCTOR_AND_NURSES">
                   Doctor & Nurses
                 </ToggleButton>
+                <ToggleButton value="FAMILY">Family</ToggleButton>
               </ToggleButtonGroup>
             </Grid>
           </Grid>
@@ -549,24 +551,21 @@ const EditableSummaryBar = ({ values = {}, onApply }) => {
                 CHOOSE TRAVEL CLASS
               </Typography>
               <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
-                {[
-                  "Economy/Premium Economy",
-                  "Premium Economy",
-                  "Business",
-                  "First Class",
-                ].map((cls) => (
-                  <Button
-                    key={cls}
-                    variant={
-                      local.travelClass === cls ? "contained" : "outlined"
-                    }
-                    size="small"
-                    onClick={() => handleTravelClassChange(cls)}
-                    sx={{ borderRadius: 3, textTransform: "none" }}
-                  >
-                    {cls}
-                  </Button>
-                ))}
+                {["Economy", "Premium Economy", "Business", "First Class"].map(
+                  (cls) => (
+                    <Button
+                      key={cls}
+                      variant={
+                        local.travelClass === cls ? "contained" : "outlined"
+                      }
+                      size="small"
+                      onClick={() => handleTravelClassChange(cls)}
+                      sx={{ borderRadius: 3, textTransform: "none" }}
+                    >
+                      {cls}
+                    </Button>
+                  )
+                )}
               </Box>
 
               <Box sx={{ textAlign: "right", mt: 2 }}>

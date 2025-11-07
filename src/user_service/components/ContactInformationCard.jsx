@@ -17,7 +17,7 @@ const ContactInformationCard = ({
   const [localContact, setLocalContact] = useState({
     contactEmail: "",
     contactPhone: "",
-    specialFareType: "NONE",
+    specialFareType: "REGULAR",
   });
 
   useEffect(() => {
@@ -25,7 +25,7 @@ const ContactInformationCard = ({
       setLocalContact({
         contactEmail: booking.contactEmail || "",
         contactPhone: booking.contactPhone || "",
-        specialFareType: booking.specialFareType || "NONE",
+        specialFareType: booking.specialFareType || "REGULAR",
       });
     }
   }, [booking]);
@@ -87,13 +87,15 @@ const ContactInformationCard = ({
               select
               fullWidth
               label="Special Fare Type"
-              value={localContact.specialFareType}
+              value={localContact.specialFareType || "REGULAR"}
               onChange={(e) => handleChange("specialFareType", e.target.value)}
             >
-              <MenuItem value="NONE">None</MenuItem>
+              <MenuItem value="REGULAR">None</MenuItem>
               <MenuItem value="ARMED_FORCES">Armed Forces</MenuItem>
               <MenuItem value="STUDENT">Student</MenuItem>
               <MenuItem value="SENIOR_CITIZEN">Senior Citizen</MenuItem>
+              <MenuItem value="DOCTOR_AND_NURSES">Doctor & Nurses</MenuItem>
+              <MenuItem value="FAMILY">Family</MenuItem>
             </TextField>
           </Grid>
         </Grid>

@@ -15,7 +15,6 @@ import {
   fetchUserByUsername,
   bookFlight,
   selectUserDetails,
-  selectFlightDetails,
   selectLoading,
   fetchSeatsByFlightNumber,
   selectSeats,
@@ -27,21 +26,21 @@ import FlightSummaryAccordion from "./components/FlightSummaryAccordion";
 import ContactInformationCard from "./components/ContactInformationCard";
 
 const FlightBookingPage = () => {
-  const { flightNumber } = useParams();
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
 
   const filters = location.state?.filtersData || {};
   const selectedFlights = location.state?.selectedFlights || {};
-  const tripType = filters.tripType || "ONE_WAY";
-
+  const tripType = filters.tripType;
+  // console.log(tripType);
+  // console.log(selectedFlights);
   const loggedUser = useSelector(selectUser);
   const user = useSelector(selectUserDetails);
-  const flight = useSelector(selectFlightDetails);
+
   const loading = useSelector(selectLoading);
   const seats = useSelector(selectSeats);
-  // console.log(user);
+  // console.log(seats);
   // === MULTI CITY STATE ===
   const routeKeys = Object.keys(selectedFlights);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -52,8 +51,7 @@ const FlightBookingPage = () => {
   const currentRouteKey =
     tripType !== "ONE_WAY" ? routeKeys[currentIndex] : null;
   // Only for maintaining reference of current flight in multi-city
-  const currentFlight =
-    tripType !== "ONE_WAY" ? selectedFlights[currentRouteKey] : flight;
+  const currentFlight = selectedFlights[currentRouteKey];
 
   // === BOOKING OBJECT ===
   // Helper to generate alphanumeric booking number (PNR-style)
@@ -70,12 +68,24 @@ const FlightBookingPage = () => {
     seatNo: "",
   };
 
+  const [commonPassengers, setCommonPassengers] = useState(
+    Array.from(
+      { length: filters.passengers ? parseInt(filters.passengers) : 1 },
+      () => ({
+        name: "",
+        gender: "",
+        age: "",
+        passportNumber: "",
+      })
+    )
+  );
+
   // Generate one common alphanumeric booking number for all flights
   const bookingNo = generateBookingNo();
 
   const [bookings, setBookings] = useState(
     (tripType === "ONE_WAY"
-      ? [selectedFlights?.flightNumber ? selectedFlights : {}]
+      ? [selectedFlights[routeKeys[0]]]
       : Object.values(selectedFlights)
     ).map((flight) => ({
       bookingNo: bookingNo, // same alphanumeric for all flights
@@ -99,25 +109,31 @@ const FlightBookingPage = () => {
 
       status: "PENDING",
       specialFareType: filters.specialFareType || "NONE",
-      journeyStatus: "NOT_STARTED",
+      journeyStatus: "SCHEDULED",
 
-      passengers: Array.from(
-        { length: filters.passengers ? parseInt(filters.passengers) : 1 },
-        () => ({ ...defaultPassenger })
-      ),
+      passengers: commonPassengers.map((p) => ({ ...p, seatNo: "" })),
     }))
   );
 
   // === FETCH USER, FLIGHT & SEATS ===
   useEffect(() => {
-    if (loggedUser) dispatch(fetchUserByUsername(loggedUser));
-
-    if (tripType === "ONE_WAY" && flightNumber) {
-      dispatch(fetchSeatsByFlightNumber(flightNumber));
+    if (loggedUser) {
+      dispatch(fetchUserByUsername(loggedUser));
+    }
+    // console.log("tripType", tripType);
+    if (
+      tripType === "ONE_WAY" &&
+      selectedFlights[routeKeys[currentIndex]].flightNumber
+    ) {
+      dispatch(
+        fetchSeatsByFlightNumber(
+          selectedFlights[routeKeys[currentIndex]].flightNumber
+        )
+      );
     } else if (tripType !== "ONE_WAY" && currentFlight?.flightNumber) {
       dispatch(fetchSeatsByFlightNumber(currentFlight.flightNumber));
     }
-  }, [dispatch, loggedUser, flightNumber, currentFlight, tripType]);
+  }, [dispatch, loggedUser, tripType]);
 
   // === SYNC CONTACT INFO FROM USER ===
   useEffect(() => {
@@ -132,68 +148,74 @@ const FlightBookingPage = () => {
     }
   }, [user]);
 
+  useEffect(() => {
+    setBookings((prevBookings) =>
+      prevBookings.map((booking) => ({
+        ...booking,
+        passengers: booking.passengers.map((p, i) => ({
+          ...p,
+          name: commonPassengers[i]?.name || "",
+          age: commonPassengers[i]?.age || "",
+          gender: commonPassengers[i]?.gender || "",
+          passportNumber: commonPassengers[i]?.passportNumber || "",
+        })),
+      }))
+    );
+  }, [commonPassengers]);
+  // console.log(
+  //   "selected Flight : ",
+  //   selectedFlights[routeKeys[currentIndex]].flightNumber
+  // );
   // console.log("From FBP page ", bookings);
 
   // === PASSENGER HANDLERS ===
   const handlePassengerChange = (index, field, value) => {
-    setBookings((prevBookings) => {
-      const updatedBookings = [...prevBookings];
-      const bookingToUpdate =
-        tripType === "ONE_WAY"
-          ? { ...updatedBookings[0] }
-          : { ...updatedBookings[currentIndex] };
-      const updatedPassengers = [...bookingToUpdate.passengers];
-      updatedPassengers[index][field] = value;
-      bookingToUpdate.passengers = updatedPassengers;
-      if (tripType === "ONE_WAY") updatedBookings[0] = bookingToUpdate;
-      else updatedBookings[currentIndex] = bookingToUpdate;
-      return updatedBookings;
+    setCommonPassengers((prev) => {
+      const updated = [...prev];
+      updated[index][field] = value;
+      return updated;
     });
   };
 
+  // Add a new passenger
   const addPassenger = () => {
-    setBookings((prevBookings) => {
-      const updatedBookings = [...prevBookings];
-      const bookingToUpdate =
-        tripType === "ONE_WAY"
-          ? { ...updatedBookings[0] }
-          : { ...updatedBookings[currentIndex] };
-      bookingToUpdate.passengers = [
-        ...bookingToUpdate.passengers,
-        { ...defaultPassenger },
-      ];
-      bookingToUpdate.passengerCount = bookingToUpdate.passengers.length;
-      if (tripType === "ONE_WAY") updatedBookings[0] = bookingToUpdate;
-      else updatedBookings[currentIndex] = bookingToUpdate;
-      return updatedBookings;
-    });
+    // 1️⃣ Update commonPassengers
+    setCommonPassengers((prev) => [
+      ...prev,
+      { name: "", age: "", gender: "", passportNumber: "" },
+    ]);
+
+    // 2️⃣ Update bookings (just add a new passenger slot for each flight)
+    setBookings((prevBookings) =>
+      prevBookings.map((booking) => ({
+        ...booking,
+        passengers: [
+          ...booking.passengers,
+          { ...defaultPassenger }, // only seat info etc. per flight
+        ],
+        passengerCount: booking.passengers.length + 1,
+      }))
+    );
   };
 
+  // Remove a passenger at index
   const removePassenger = (index) => {
-    setBookings((prevBookings) => {
-      const updatedBookings = [...prevBookings];
-      const bookingToUpdate =
-        tripType === "ONE_WAY"
-          ? { ...updatedBookings[0] }
-          : { ...updatedBookings[currentIndex] };
-      bookingToUpdate.passengers = bookingToUpdate.passengers.filter(
-        (_, i) => i !== index
-      );
-      bookingToUpdate.passengerCount = bookingToUpdate.passengers.length;
-      if (tripType === "ONE_WAY") updatedBookings[0] = bookingToUpdate;
-      else updatedBookings[currentIndex] = bookingToUpdate;
-      return updatedBookings;
-    });
+    setCommonPassengers((prev) => prev.filter((_, i) => i !== index));
+
+    setBookings((prevBookings) =>
+      prevBookings.map((booking) => ({
+        ...booking,
+        passengers: booking.passengers.filter((_, i) => i !== index),
+        passengerCount: booking.passengers.length - 1,
+      }))
+    );
   };
 
   // === SEAT SELECTION (cyclic, fully reselectable for all passengers) ===
   const handleSeatSelect = (rawSeatNumber) => {
     const seatNumber = rawSeatNumber == null ? "" : String(rawSeatNumber);
-
+    setExpanded(false); // collapse flight summary on seat select
     setBookings((prevBookings) => {
-      if (!Array.isArray(prevBookings)) return prevBookings;
-
-      // Deep copy bookings and passengers
       const updatedBookings = prevBookings.map((b) => ({
         ...b,
         passengers: Array.isArray(b.passengers)
@@ -203,34 +225,28 @@ const FlightBookingPage = () => {
 
       const targetIndex = tripType === "ONE_WAY" ? 0 : currentIndex;
       const booking = updatedBookings[targetIndex];
-      if (!booking || !Array.isArray(booking.passengers)) return prevBookings;
-
       const passengers = booking.passengers;
       const passengerCount = passengers.length;
 
-      // Get currently selected seats
+      // get currently assigned seats
       let currentSelectedSeats = passengers
         .map((p) => p.seatNo)
-        .filter((s) => s && s !== "");
+        .filter(Boolean);
 
       const seatIndex = currentSelectedSeats.indexOf(seatNumber);
 
       if (seatIndex !== -1) {
-        // Seat already selected → deselect
+        // deselect
         currentSelectedSeats.splice(seatIndex, 1);
       } else {
-        // Seat is new
         if (currentSelectedSeats.length < passengerCount) {
-          // There is free passenger → just push
           currentSelectedSeats.push(seatNumber);
         } else {
-          // All passengers already have seats → remove oldest (cyclic)
           currentSelectedSeats.shift();
           currentSelectedSeats.push(seatNumber);
         }
       }
 
-      // Reassign seats to passengers in order
       passengers.forEach((p, i) => {
         p.seatNo = currentSelectedSeats[i] || "";
       });
@@ -243,6 +259,7 @@ const FlightBookingPage = () => {
   };
 
   // === FORM COMPLETION CHECK ===
+
   const currentBooking =
     Array.isArray(bookings) && bookings.length > 0
       ? tripType === "ONE_WAY"
@@ -254,13 +271,16 @@ const FlightBookingPage = () => {
   const passengers = Array.isArray(currentBooking.passengers)
     ? currentBooking.passengers
     : [];
-  console.log("Current Booking:", currentBooking);
+  // console.log("Current Booking:", currentBooking);
   // === FORM VALIDATION ===
-  const isFormComplete =
-    passengers.length > 0 &&
-    passengers.every(
-      (p) => !!p.name?.trim() && !!p.age && !!p.gender && !!p.seatNo
-    );
+  const isFormComplete = bookings.every(
+    (booking) =>
+      Array.isArray(booking.passengers) &&
+      booking.passengers.length > 0 &&
+      booking.passengers.every(
+        (p) => !!p.name?.trim() && !!p.age && !!p.gender && !!p.seatNo
+      )
+  );
 
   // === FILLED INFO COUNT ===
   const filledInfoCount = passengers.filter(
@@ -281,25 +301,55 @@ const FlightBookingPage = () => {
 
   // === BOOKING SUBMISSION ===
   const handleBooking = async () => {
-    const payload = {
-      ...bookings,
-      flights:
-        tripType === "ONE_WAY"
-          ? [flight]
-          : routeKeys.map((key) => selectedFlights[key]),
-    };
-
     try {
+      if (!user?.userID) throw new Error("User not logged in");
+
+      if (!bookings || bookings.length === 0)
+        throw new Error("No flights selected for booking");
+      // console.log("Bookings to submit:", bookings);
+      // Ensure every booking has passengers with assigned seats
+      bookings.forEach((b, idx) => {
+        if (!b.passengers || b.passengers.length === 0) {
+          throw new Error(`No passengers added for booking ${idx + 1}`);
+        }
+        b.passengers.forEach((p, pIdx) => {
+          if (!p.seatNo) {
+            throw new Error(
+              `Seat not selected for passenger ${p.name} on flight ${b.flightNumber}`
+            );
+          }
+        });
+      });
+
+      // Prepare payload for backend
+      const bookingPayload =
+        tripType === "ONE_WAY"
+          ? [bookings[0]] // single flight
+          : bookings.map((b) => ({
+              ...b,
+              tripType, // include the overall trip type
+            }));
+
+      // console.log("Booking Payload:", bookingPayload);
+      // console.log("Booking Payload:", {
+      //   userID: user.userID,
+      //   bookingData: bookingPayload,
+      // });
+      // Call Redux asyncThunk
       const result = await dispatch(
-        bookFlight({ userID: user?.userID, bookingData: payload })
+        bookFlight({ userID: user.userID, bookingData: bookingPayload })
       ).unwrap();
+
+      // console.log("Booking successful:", result);
+
       navigate("/booking-completed", { state: result });
     } catch (err) {
       console.error("Booking failed:", err);
+      alert(err.message || "Booking failed. Please check your inputs.");
     }
   };
-
-  if (loading || (!flight && tripType === "ONE_WAY"))
+  // console.log(flight);
+  if (loading)
     return (
       <Box sx={{ textAlign: "center", mt: 5 }}>
         <Typography variant="h6">Loading flight details...</Typography>
@@ -328,9 +378,17 @@ const FlightBookingPage = () => {
       />
 
       {/* === PASSENGER FORM === */}
-      {bookings[currentIndex]?.passengers ? (
+      {(
+        tripType === "ONE_WAY"
+          ? bookings[0]?.passengers
+          : bookings[currentIndex]?.passengers
+      ) ? (
         <PassengerForm
-          passengers={bookings[currentIndex].passengers}
+          passengers={
+            tripType === "ONE_WAY"
+              ? bookings[0].passengers
+              : bookings[currentIndex].passengers
+          }
           onPassengerChange={handlePassengerChange}
           onAddPassenger={addPassenger}
           onRemovePassenger={removePassenger}
@@ -365,7 +423,7 @@ const FlightBookingPage = () => {
           Select Seats For{" "}
           {tripType !== "ONE_WAY"
             ? currentRouteKey.replace(/_/g, " to ")
-            : `${flight?.sourceAirport} → ${flight?.destinationAirport}`}
+            : `${selectedFlights[currentIndex]?.sourceAirport} → ${selectedFlights[currentIndex]?.destinationAirport}`}
         </Typography>
 
         <Box sx={{ flex: 1, overflowY: "auto", p: 2 }}>
@@ -421,10 +479,7 @@ const FlightBookingPage = () => {
           variant="contained"
           fullWidth
           sx={{ py: 1.5, fontWeight: "bold", borderRadius: 2 }}
-          onClick={() => {
-            // handleBooking()
-            console.log("Booking data:", bookings);
-          }}
+          onClick={handleBooking}
           disabled={!isFormComplete || loading}
         >
           {loading

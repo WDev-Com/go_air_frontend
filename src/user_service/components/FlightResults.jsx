@@ -13,12 +13,12 @@ import { useNavigate, useLocation } from "react-router-dom";
 
 const FlightResults = ({ flights, loading, filters }) => {
   const routeKeys = Object.keys(flights || {});
-  // console.log(flights);
+  // console.log(filters);
   const [selectedRoute, setSelectedRoute] = useState("");
   const [selectedFlights, setSelectedFlights] = useState({});
   const navigate = useNavigate();
   const location = useLocation();
-
+  // console.log(selectedFlights);
   // ✅ Recover selected flights if user came back from passenger/seat page
   useEffect(() => {
     if (
@@ -80,6 +80,7 @@ const FlightResults = ({ flights, loading, filters }) => {
     // ✅ Pass selectedFlights as key–value pair (not array)
     navigate(`/complete-booking`, {
       state: {
+        tripType: filters?.tripType,
         filtersData: filters,
         selectedFlights: selectedFlights, // <-- key–value pair
         from: "flight-results",

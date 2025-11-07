@@ -12,7 +12,7 @@ import ProtectedUser from "./auth/ProtectedUser";
 import MyAccountPage from "./user_service/MyAccountPage ";
 import BookingsPage from "./user_service/ViewBookingsPage";
 import ViewTicketsPage from "./user_service/ViewTicketsPage";
-
+import AboutPage from "./pages/AboutPage";
 // ✅ Layout component that wraps Navbar + Outlet + Footer
 function Layout() {
   return (
@@ -71,6 +71,10 @@ const router = createBrowserRouter([
             <BookingCompleted />
           </ProtectedUser>
         ),
+      },
+      {
+        path: "/about",
+        element: <AboutPage />,
       },
       { path: "*", element: <HomePage /> },
     ],

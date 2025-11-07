@@ -34,7 +34,7 @@ const FlightSearchUI = () => {
       adults: 1,
       children: 0,
       infants: 0,
-      travelClass: "Economy/Premium Economy",
+      travelClass: "Economy",
     },
     passengers: 1,
   });
@@ -66,7 +66,7 @@ const FlightSearchUI = () => {
       specialFareType: formData.specialFareType,
     };
 
-    console.log("Sending to fetchFlights:", flightSearchData);
+    // console.log("Sending to fetchFlights:", flightSearchData);
     try {
       await dispatch(fetchFlights(flightSearchData)).unwrap();
       navigate("/flight-search-results", {
@@ -384,7 +384,7 @@ const FlightSearchUI = () => {
                 </Typography>
                 <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
                   {[
-                    "Economy/Premium Economy",
+                    "Economy",
                     "Premium Economy",
                     "Business",
                     "First Class",
@@ -400,7 +400,10 @@ const FlightSearchUI = () => {
                       onClick={() =>
                         setFormData((prev) => ({
                           ...prev,
-                          travellers: { ...prev.travellers, travelClass: cls },
+                          travellers: {
+                            ...prev.travellers,
+                            travelClass: cls,
+                          },
                         }))
                       }
                       sx={{ borderRadius: 3, textTransform: "none" }}
@@ -451,7 +454,10 @@ const FlightSearchUI = () => {
             <ToggleButton value="STUDENT">Student</ToggleButton>
             <ToggleButton value="ARMED_FORCES">Armed Forces</ToggleButton>
             <ToggleButton value="SENIOR_CITIZEN">Senior Citizen</ToggleButton>
-            <ToggleButton value="DOCTOR_NURSES">Doctor & Nurses</ToggleButton>
+            <ToggleButton value="DOCTOR_AND_NURSES">
+              Doctor & Nurses
+            </ToggleButton>
+            <ToggleButton value="FAMILY">Family</ToggleButton>
           </ToggleButtonGroup>
         </Box>
 

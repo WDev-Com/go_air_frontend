@@ -19,7 +19,7 @@ const FlightSearchResultPage = () => {
   const loading = useSelector(selectLoading);
   const isFirstLoad = useRef(true);
   const location = useLocation();
-
+  // console.log(flights);
   // Get search params from navigation
   const formData = location.state?.searchParams || {};
 
@@ -58,19 +58,21 @@ const FlightSearchResultPage = () => {
 
       setFilters((prev) => ({
         ...prev,
-        ...rest,
-        passengers: totalPassengers,
-        travelClass: travellers.travelClass || prev.travelClass,
+        ...rest, // ✅ merges ALL top-level formData keys, even null/undefined values
+        passengers: formData.passengers ?? totalPassengers ?? prev.passengers,
+        travelClass:
+          travellers.travelClass ?? formData.travelClass ?? prev.travelClass,
         travellers: {
-          adults: travellers.adults || prev.travellers.adults,
-          children: travellers.children || prev.travellers.children,
-          infants: travellers.infants || prev.travellers.infants,
-          travelClass: travellers.travelClass || prev.travellers.travelClass,
+          adults: travellers.adults ?? prev.travellers.adults,
+          children: travellers.children ?? prev.travellers.children,
+          infants: travellers.infants ?? prev.travellers.infants,
+          travelClass: travellers.travelClass ?? prev.travellers.travelClass,
         },
       }));
     }
   }, [formData]);
 
+  // console.log("Current Filters:", filters);
   // Fetch flights API
   const handleSearch = async (params = filters) => {
     if (!params.sourceAirports || !params.destinationAirports) {

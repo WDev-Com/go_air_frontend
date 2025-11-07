@@ -26,7 +26,6 @@ const pages = [
     name: "Bookings",
     path: "/bookings",
   },
-  { name: "Check-in", path: "/checkin" },
   { name: "About", path: "/about" },
 ];
 

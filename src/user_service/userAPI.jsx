@@ -98,7 +98,7 @@ export const bookFlightAPI = async (userID, bookingData) => {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(bookingData),
+      body: JSON.stringify(bookingData), // array of bookings
     });
 
     if (!res.ok) {
@@ -119,7 +119,7 @@ export const bookFlightAPI = async (userID, bookingData) => {
 export const getSeatsByFlightNumberAPI = async (flightNumber) => {
   try {
     let url = `${BASE_URL}/admin/flight/seats/${flightNumber}`;
-    console.log("Fetching seats from URL:", url);
+    // console.log("Fetching seats from URL:", url);
     const response = await fetch(url);
     if (!response.ok) {
       throw new Error("Failed to fetch seats");
