@@ -13,6 +13,9 @@ import MyAccountPage from "./user_service/MyAccountPage ";
 import BookingsPage from "./user_service/ViewBookingsPage";
 import ViewTicketsPage from "./user_service/ViewTicketsPage";
 import AboutPage from "./pages/AboutPage";
+import AdminFlightsPage from "./admin_service/AdminFlightsPage";
+import ProtectedAdmin from "./auth/ProtectedAdmin";
+import NotFoundPage from "./pages/NotFoundPage";
 // ✅ Layout component that wraps Navbar + Outlet + Footer
 function Layout() {
   return (
@@ -32,6 +35,15 @@ const router = createBrowserRouter([
       { path: "/flight-search-results", element: <FlightSearchResultPage /> },
       { path: "/login", element: <Login /> },
       { path: "/signup", element: <Signup /> },
+      {
+        path: "/admin/dashboard",
+        element: (
+          <ProtectedAdmin>
+            <AdminFlightsPage />
+          </ProtectedAdmin>
+        ),
+      },
+
       {
         path: "/complete-booking",
         element: (
@@ -58,11 +70,7 @@ const router = createBrowserRouter([
       },
       {
         path: "/my-account",
-        element: (
-          <ProtectedUser>
-            <MyAccountPage />
-          </ProtectedUser>
-        ),
+        element: <MyAccountPage />,
       },
       {
         path: "/booking-completed",
@@ -76,7 +84,7 @@ const router = createBrowserRouter([
         path: "/about",
         element: <AboutPage />,
       },
-      { path: "*", element: <HomePage /> },
+      { path: "*", element: <NotFoundPage /> },
     ],
   },
 ]);

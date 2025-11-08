@@ -32,7 +32,7 @@ export default function Login() {
     }
     dispatch(loginUserAsync({ username, password })).then((res) => {
       if (res.meta.requestStatus === "fulfilled") {
-        navigate("/home");
+        navigate("/");
       }
     });
   };

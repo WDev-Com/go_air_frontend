@@ -7,7 +7,6 @@ import {
   Typography,
   Button,
   Avatar,
-  Collapse,
   Paper,
   Menu,
   MenuItem,
@@ -15,46 +14,41 @@ import {
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import FlightTakeoffIcon from "@mui/icons-material/FlightTakeoff";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { useSelector } from "react-redux";
-import { selectUser } from "../auth/authSlice"; // ✅ import selector
-import { Link, useNavigate } from "react-router-dom"; // ✅ for navigation
-
-const pages = [
-  { name: "Home", path: "/" },
-  {
-    name: "Bookings",
-    path: "/bookings",
-  },
-  { name: "About", path: "/about" },
-];
+import { selectUser, selectUserRole } from "../auth/authSlice";
+import { Link, useNavigate } from "react-router-dom";
 
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [activeDropdown, setActiveDropdown] = useState(null);
   const [anchorEl, setAnchorEl] = useState(null);
 
   const user = useSelector(selectUser);
+  const role = useSelector(selectUserRole);
   const navigate = useNavigate();
 
   const toggleMobileMenu = () => setMobileMenuOpen(!mobileMenuOpen);
-  const toggleDropdown = (index) =>
-    setActiveDropdown(activeDropdown === index ? null : index);
-
-  const handleAvatarClick = (event) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleMenuClose = () => {
-    setAnchorEl(null);
-  };
+  const handleAvatarClick = (event) => setAnchorEl(event.currentTarget);
+  const handleMenuClose = () => setAnchorEl(null);
 
   const handleClickAway = () => {
     if (mobileMenuOpen) {
       setMobileMenuOpen(false);
-      setActiveDropdown(null);
     }
   };
+
+  // ✅ Define pages dynamically based on role
+  const pages =
+    role === "ADMIN"
+      ? [
+          { name: "My Admin", path: "/admin/dashboard" },
+          { name: "All Bookings", path: "/admin/bookings" },
+          { name: "Manage Flights", path: "/admin/flights" },
+        ]
+      : [
+          { name: "Home", path: "/" },
+          { name: "Bookings", path: "/bookings" },
+          { name: "About", path: "/about" },
+        ];
 
   return (
     <Box sx={{ position: "relative" }}>
@@ -78,7 +72,6 @@ export default function Navbar() {
                   fontFamily: "monospace",
                   fontWeight: 700,
                   letterSpacing: ".1rem",
-                  color: "inherit",
                 }}
               >
                 GoAirline
@@ -110,7 +103,7 @@ export default function Navbar() {
 
           {/* ===== Desktop Menu ===== */}
           <Box sx={{ display: { xs: "none", md: "flex" }, gap: 2 }}>
-            {pages.map((page, index) => (
+            {pages.map((page) => (
               <Button
                 key={page.name}
                 component={Link}
@@ -119,6 +112,9 @@ export default function Navbar() {
                   color: "white",
                   textTransform: "none",
                   fontWeight: 600,
+                  "&:hover": {
+                    backgroundColor: "rgba(255,255,255,0.1)",
+                  },
                 }}
               >
                 {page.name}
@@ -159,20 +155,32 @@ export default function Navbar() {
                     My Account
                   </MenuItem>
 
-                  {/* ✅ New “View Tickets” Button */}
-                  <MenuItem
-                    onClick={() => {
-                      navigate(`/bookings`);
-                      handleMenuClose();
-                    }}
-                  >
-                    View Booking
-                  </MenuItem>
+                  {role === "USER" && (
+                    <MenuItem
+                      onClick={() => {
+                        navigate("/bookings");
+                        handleMenuClose();
+                      }}
+                    >
+                      View Booking
+                    </MenuItem>
+                  )}
+
+                  {role === "ADMIN" && (
+                    <MenuItem
+                      onClick={() => {
+                        navigate("/admin/bookings");
+                        handleMenuClose();
+                      }}
+                    >
+                      Manage Bookings
+                    </MenuItem>
+                  )}
 
                   <MenuItem
                     onClick={() => {
                       handleMenuClose();
-                      // your logout logic here
+                      // 🔒 Add logout logic here
                     }}
                   >
                     Logout
@@ -222,35 +230,29 @@ export default function Navbar() {
         >
           <ClickAwayListener onClickAway={handleClickAway}>
             <Box>
-              {pages.map((page, i) => (
-                <Box key={page.name}>
-                  <Box
-                    component={Link}
-                    to={page.path}
-                    sx={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      px: 2,
-                      py: 1.5,
-                      cursor: "pointer",
-                      color: "inherit", // ✅ keeps text color consistent
-                      textDecoration: "none", // ✅ removes underline
-                      "&:hover": {
-                        backgroundColor: "#e0eaff",
-                        textDecoration: "none", // ✅ ensures hover doesn’t re-add underline
-                      },
-                    }}
-                    onClick={() =>
-                      page.subMenu
-                        ? toggleDropdown(i)
-                        : setMobileMenuOpen(false)
-                    }
-                  >
-                    <Typography variant="subtitle1" fontWeight={600}>
-                      {page.name}
-                    </Typography>
-                  </Box>
+              {pages.map((page) => (
+                <Box
+                  key={page.name}
+                  component={Link}
+                  to={page.path}
+                  sx={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    px: 2,
+                    py: 1.5,
+                    cursor: "pointer",
+                    color: "inherit",
+                    textDecoration: "none",
+                    "&:hover": {
+                      backgroundColor: "#e0eaff",
+                    },
+                  }}
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <Typography variant="subtitle1" fontWeight={600}>
+                    {page.name}
+                  </Typography>
                 </Box>
               ))}
             </Box>
