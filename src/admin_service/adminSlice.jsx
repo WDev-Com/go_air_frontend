@@ -116,7 +116,7 @@ const adminSlice = createSlice({
       })
       .addCase(fetchFlights.fulfilled, (state, action) => {
         state.loading = false;
-        console.log("Fetched Flights:", action.payload);
+        // console.log("Fetched Flights:", action.payload);
         state.flights = action.payload.flights; // only store the array
         state.totalElements = action.payload.totalElements;
       })

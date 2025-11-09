@@ -11,28 +11,28 @@ export const apiRequest = async (endpoint, method = "GET", body = null) => {
       body: body ? JSON.stringify(body) : null,
     });
 
-    // ✅ Try parsing JSON once
+    // ✅ Determine response content type
+    const contentType = response.headers.get("content-type");
     let data;
-    try {
+
+    if (contentType && contentType.includes("application/json")) {
       data = await response.json();
-    } catch {
-      data = null; // in case response has no JSON
+    } else {
+      data = await response.text(); // handle plain text messages
     }
-    // console.log("API Response Data:", data);
-    // ✅ Log response safely
-    // console.log("API Response:", data);
 
-    // ✅ Handle non-OK responses
+    // console.log("✅ API Response:", data);
+
     if (!response.ok) {
-      const message =
-        data?.message || data || `Request failed: ${response.status}`;
-      throw new Error(message);
+      // ✅ If backend sends plain text, ensure we throw properly
+      throw new Error(
+        typeof data === "string" ? data : data?.message || "Unknown error"
+      );
     }
 
-    // ✅ Return data or plain text
     return data;
   } catch (error) {
-    console.error("API Error:", error.message);
+    console.error("❌ API Error:", error.message);
     throw error;
   }
 };
@@ -42,7 +42,7 @@ export const apiRequest = async (endpoint, method = "GET", body = null) => {
 // ===============================
 export const fetchAllFlightsAPI = async (filters = {}) => {
   try {
-    console.log("Fetching flights with filters:", filters);
+    // console.log("Fetching flights with filters:", filters);
 
     // Convert filters object into query parameters
     const queryParams = new URLSearchParams();
@@ -59,7 +59,7 @@ export const fetchAllFlightsAPI = async (filters = {}) => {
 
     // Example: /searchByPaginationAndFilters?page=0&limit=5&airlines=Indigo
     const endpoint = `/searchByPaginationAndFilters?${queryParams.toString()}`;
-    console.log("Constructed Endpoint:", endpoint);
+    // console.log("Constructed Endpoint:", endpoint);
     return await apiRequest(endpoint, "GET"); // ✅ GET with params
   } catch (error) {
     console.error("❌ Error fetching all flights:", error.message);

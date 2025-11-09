@@ -52,11 +52,11 @@ const FilterPanel = ({ handleChange, handleSubmit, handleClear, filters }) => {
       <Grid container spacing={2} alignItems="center">
         {/* Airlines (array) */}
         <Grid item xs={12} sm={6} md={3}>
-          <FormControl fullWidth>
+          <FormControl sx={{ width: 100 }}>
             <InputLabel>Airlines</InputLabel>
             <Select
               multiple
-              value={filters.airlines[0]}
+              value={filters.airlines}
               onChange={(e) => handleChange("airlines", e.target.value)}
               input={<OutlinedInput label="Airlines" />}
               renderValue={(selected) => selected.join(", ")}
@@ -103,18 +103,6 @@ const FilterPanel = ({ handleChange, handleSubmit, handleClear, filters }) => {
           />
         </Grid>
 
-        {/* Return Date */}
-        <Grid item xs={12} sm={6} md={2}>
-          <TextField
-            label="Return Date"
-            type="date"
-            value={filters.retDate || ""}
-            onChange={(e) => handleChange("retDate", e.target.value)}
-            fullWidth
-            InputLabelProps={{ shrink: true }}
-          />
-        </Grid>
-
         {/* Stops */}
         <Grid item xs={12} sm={6} md={1.5}>
           <TextField
@@ -139,7 +127,7 @@ const FilterPanel = ({ handleChange, handleSubmit, handleClear, filters }) => {
             label="Booking Type"
             value={filters.bookingType || ""}
             onChange={(e) => handleChange("bookingType", e.target.value)}
-            fullWidth
+            sx={{ width: 140 }}
           >
             {bookingTypes.map((type) => (
               <MenuItem key={type} value={type}>
@@ -156,7 +144,7 @@ const FilterPanel = ({ handleChange, handleSubmit, handleClear, filters }) => {
             label="Departure Type"
             value={filters.departureType || ""}
             onChange={(e) => handleChange("departureType", e.target.value)}
-            fullWidth
+            sx={{ width: 150 }}
           >
             {departureTypes.map((type) => (
               <MenuItem key={type} value={type}>
@@ -191,7 +179,7 @@ const FilterPanel = ({ handleChange, handleSubmit, handleClear, filters }) => {
             label="Aircraft Size"
             value={filters.aircraftSize || ""}
             onChange={(e) => handleChange("aircraftSize", e.target.value)}
-            fullWidth
+            sx={{ width: 130 }}
           >
             {aircraftSizes.map((size) => (
               <MenuItem key={size} value={size}>
@@ -208,7 +196,7 @@ const FilterPanel = ({ handleChange, handleSubmit, handleClear, filters }) => {
             label="Special Fare"
             value={filters.specialFareType || ""}
             onChange={(e) => handleChange("specialFareType", e.target.value)}
-            fullWidth
+            sx={{ width: 140 }}
           >
             {specialFareTypes.map((type) => (
               <MenuItem key={type} value={type}>

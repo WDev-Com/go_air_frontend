@@ -42,7 +42,7 @@ export default function Navbar() {
       ? [
           { name: "My Admin", path: "/admin/dashboard" },
           { name: "All Bookings", path: "/admin/bookings" },
-          { name: "Manage Flights", path: "/admin/flights" },
+          { name: "Create Flights", path: "/admin/create-flights" },
         ]
       : [
           { name: "Home", path: "/" },

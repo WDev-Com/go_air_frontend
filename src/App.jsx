@@ -16,6 +16,8 @@ import AboutPage from "./pages/AboutPage";
 import AdminFlightsPage from "./admin_service/AdminFlightsPage";
 import ProtectedAdmin from "./auth/ProtectedAdmin";
 import NotFoundPage from "./pages/NotFoundPage";
+import FlightEditPage from "./admin_service/FlightEditPage";
+import CreateFlightPage from "./admin_service/CreateFlightPage";
 // ✅ Layout component that wraps Navbar + Outlet + Footer
 function Layout() {
   return (
@@ -43,7 +45,22 @@ const router = createBrowserRouter([
           </ProtectedAdmin>
         ),
       },
-
+      {
+        path: "/admin/create-flights",
+        element: (
+          <ProtectedAdmin>
+            <CreateFlightPage />
+          </ProtectedAdmin>
+        ),
+      },
+      {
+        path: "/admin/edit-flight/:flightNumber",
+        element: (
+          <ProtectedAdmin>
+            <FlightEditPage />
+          </ProtectedAdmin>
+        ),
+      },
       {
         path: "/complete-booking",
         element: (

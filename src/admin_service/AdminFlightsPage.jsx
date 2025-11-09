@@ -14,20 +14,27 @@ import {
   TablePagination,
   Paper,
   Chip,
+  Snackbar,
+  Alert,
   Divider,
+  Button,
 } from "@mui/material";
 import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
 import {
   fetchFlights,
   selectFlights,
   selectLoading,
   selectError,
   selectTotalElements,
+  deleteFlight,
 } from "./adminSlice";
 import FilterPanel from "./FilterPanel";
 
 const AdminFlightsPage = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
+
   const flights = useSelector(selectFlights);
   const loading = useSelector(selectLoading);
   const error = useSelector(selectError);
@@ -38,7 +45,6 @@ const AdminFlightsPage = () => {
     sourceAirport: "",
     destinationAirport: "",
     departureDate: "",
-    retDate: "",
     stop: 0,
     bookingType: "",
     departureType: "",
@@ -50,6 +56,12 @@ const AdminFlightsPage = () => {
     limit: 5,
   });
 
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "success",
+  });
+
   // Handle changes in filter inputs
   const handleChange = (field, value) => {
     setFilters((prev) => ({ ...prev, [field]: value }));
@@ -57,18 +69,17 @@ const AdminFlightsPage = () => {
 
   // Apply filters
   const handleSubmit = () => {
-    setFilters((prev) => ({ ...prev, page: 0 })); // Reset page when filters applied
+    setFilters((prev) => ({ ...prev, page: 0 }));
     dispatch(fetchFlights({ ...filters, page: 0 }));
   };
 
   // Clear filters
   const handleClear = () => {
-    setFilters({
+    const resetFilters = {
       airlines: [],
       sourceAirport: "",
       destinationAirport: "",
       departureDate: "",
-      retDate: "",
       stop: 0,
       bookingType: "",
       departureType: "",
@@ -78,8 +89,9 @@ const AdminFlightsPage = () => {
       specialFareType: "",
       page: 0,
       limit: 5,
-    });
-    dispatch(fetchFlights({ ...filters, page: 0 }));
+    };
+    setFilters(resetFilters);
+    dispatch(fetchFlights(resetFilters));
   };
 
   // Pagination handlers
@@ -94,10 +106,37 @@ const AdminFlightsPage = () => {
     dispatch(fetchFlights({ ...filters, limit: newLimit, page: 0 }));
   };
 
-  // Fetch flights on filters change
+  // Fetch flights initially and when filters change
   useEffect(() => {
     dispatch(fetchFlights(filters));
   }, [dispatch, filters]);
+
+  // Navigate to edit page
+  const handleEditFlight = (id) => {
+    navigate(`/admin/edit-flight/${id}`);
+  };
+
+  const handleDeleteFlight = async (flightNumber) => {
+    if (
+      window.confirm(`Are you sure you want to delete flight ${flightNumber}?`)
+    ) {
+      try {
+        await dispatch(deleteFlight(flightNumber));
+        dispatch(fetchFlights(filters)); // Refresh list
+        setSnackbar({
+          open: true,
+          message: `Flight ${flightNumber} deleted successfully.`,
+          severity: "success",
+        });
+      } catch (error) {
+        setSnackbar({
+          open: true,
+          message: `Failed to delete flight ${flightNumber}.`,
+          severity: "error",
+        });
+      }
+    }
+  };
 
   return (
     <>
@@ -167,6 +206,9 @@ const AdminFlightsPage = () => {
                         <TableCell sx={{ color: "white", fontWeight: 600 }}>
                           Status
                         </TableCell>
+                        <TableCell sx={{ color: "white", fontWeight: 600 }}>
+                          Actions
+                        </TableCell>
                       </TableRow>
                     </TableHead>
 
@@ -206,6 +248,30 @@ const AdminFlightsPage = () => {
                               size="small"
                             />
                           </TableCell>
+                          <TableCell>
+                            <Box display="flex" justifyContent="center" gap={1}>
+                              <Button
+                                variant="contained"
+                                color="secondary"
+                                size="small"
+                                onClick={() =>
+                                  handleEditFlight(flight.flightNumber)
+                                }
+                              >
+                                Edit
+                              </Button>
+                              <Button
+                                variant="contained"
+                                color="error"
+                                size="small"
+                                onClick={() =>
+                                  handleDeleteFlight(flight.flightNumber)
+                                }
+                              >
+                                Delete
+                              </Button>
+                            </Box>
+                          </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -225,6 +291,20 @@ const AdminFlightsPage = () => {
             )}
           </CardContent>
         </Card>
+        <Snackbar
+          open={snackbar.open}
+          autoHideDuration={4000}
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          anchorOrigin={{ vertical: "top", horizontal: "center" }}
+        >
+          <Alert
+            severity={snackbar.severity}
+            sx={{ width: "100%" }}
+            onClose={() => setSnackbar({ ...snackbar, open: false })}
+          >
+            {snackbar.message}
+          </Alert>
+        </Snackbar>
       </Box>
     </>
   );
