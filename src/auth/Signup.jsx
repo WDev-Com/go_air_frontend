@@ -1,6 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { signupUserAsync, selectAuthStatus } from "./authSlice";
+import {
+  signupUserAsync,
+  checkUsernameAvailabilityAsync,
+  selectAuthStatus,
+} from "./authSlice";
 import {
   Box,
   Button,
@@ -12,7 +16,12 @@ import {
   IconButton,
   InputAdornment,
 } from "@mui/material";
-import { Visibility, VisibilityOff } from "@mui/icons-material";
+import {
+  Visibility,
+  VisibilityOff,
+  CheckCircle,
+  Cancel,
+} from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 
@@ -20,9 +29,23 @@ export default function Signup() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const status = useSelector(selectAuthStatus);
+  const usernameAvailable = useSelector(
+    (state) => state.auth.usernameAvailable
+  );
+
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+
+  useEffect(() => {
+    if (username.trim().length > 2) {
+      const delayDebounce = setTimeout(() => {
+        dispatch(checkUsernameAvailabilityAsync(username));
+      }, 500); // debounce 0.5s
+
+      return () => clearTimeout(delayDebounce);
+    }
+  }, [username, dispatch]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -30,6 +53,12 @@ export default function Signup() {
       toast.warning("Please enter all fields");
       return;
     }
+
+    if (usernameAvailable === false) {
+      toast.error("Username is already taken");
+      return;
+    }
+
     dispatch(signupUserAsync({ username, password })).then((res) => {
       if (res.meta.requestStatus === "fulfilled") {
         navigate("/login");
@@ -64,6 +93,18 @@ export default function Signup() {
             margin="normal"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position="end">
+                  {username &&
+                    (usernameAvailable === true ? (
+                      <CheckCircle color="success" />
+                    ) : usernameAvailable === false ? (
+                      <Cancel color="error" />
+                    ) : null)}
+                </InputAdornment>
+              ),
+            }}
           />
 
           <TextField

@@ -14,10 +14,14 @@ import {
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import FlightTakeoffIcon from "@mui/icons-material/FlightTakeoff";
-import { useSelector } from "react-redux";
-import { selectUser, selectUserRole } from "../auth/authSlice";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  selectUser,
+  selectUserRole,
+  signOutUserAsync,
+} from "../auth/authSlice";
 import { Link, useNavigate } from "react-router-dom";
-
+import { toast } from "react-toastify";
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
@@ -36,12 +40,19 @@ export default function Navbar() {
     }
   };
 
+  const dispatch = useDispatch();
+
+  const logout = () => {
+    dispatch(signOutUserAsync());
+    navigate("/");
+  };
+
   // ✅ Define pages dynamically based on role
   const pages =
     role === "ADMIN"
       ? [
           { name: "My Admin", path: "/admin/dashboard" },
-          { name: "All Bookings", path: "/admin/bookings" },
+          { name: "All Bookings", path: "/admin/all-bookings" },
           { name: "Create Flights", path: "/admin/create-flights" },
         ]
       : [
@@ -179,6 +190,7 @@ export default function Navbar() {
 
                   <MenuItem
                     onClick={() => {
+                      logout();
                       handleMenuClose();
                       // 🔒 Add logout logic here
                     }}

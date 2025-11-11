@@ -1,4 +1,31 @@
 const BASE_URL = "http://localhost:8080/admin";
+const token = localStorage.getItem("jwtToken"); // 👈 get token from localStorage
+
+// Fetch bookings by filters
+export const fetchAllBookingsAPI = async (filters = {}) => {
+  const params = new URLSearchParams();
+
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value) params.append(key, value);
+  });
+
+  const response = await fetch(
+    `${BASE_URL}/bookings/search?${params.toString()}`,
+    {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token && { Authorization: `Bearer ${token}` }), // ✅ attach token if available
+      },
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch bookings");
+  }
+
+  return await response.json();
+};
 
 // ✅ Unified API request helper with proper error handling
 export const apiRequest = async (endpoint, method = "GET", body = null) => {
@@ -7,7 +34,9 @@ export const apiRequest = async (endpoint, method = "GET", body = null) => {
       method,
       headers: {
         "Content-Type": "application/json",
+        ...(token && { Authorization: `Bearer ${token}` }), // ✅ attach token if available
       },
+
       body: body ? JSON.stringify(body) : null,
     });
 

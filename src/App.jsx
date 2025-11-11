@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { createBrowserRouter, RouterProvider, Outlet } from "react-router-dom";
 import Login from "./auth/Login";
 import Signup from "./auth/Signup";
@@ -18,6 +18,9 @@ import ProtectedAdmin from "./auth/ProtectedAdmin";
 import NotFoundPage from "./pages/NotFoundPage";
 import FlightEditPage from "./admin_service/FlightEditPage";
 import CreateFlightPage from "./admin_service/CreateFlightPage";
+import AllBookingsPage from "./admin_service/AllBookingsPage";
+import { useDispatch } from "react-redux";
+import { loadUserFromStorage } from "./auth/authSlice";
 // ✅ Layout component that wraps Navbar + Outlet + Footer
 function Layout() {
   return (
@@ -38,6 +41,14 @@ const router = createBrowserRouter([
       { path: "/login", element: <Login /> },
       { path: "/signup", element: <Signup /> },
       {
+        path: "/admin/all-bookings",
+        element: (
+          <ProtectedAdmin>
+            <AllBookingsPage />
+          </ProtectedAdmin>
+        ),
+      },
+      {
         path: "/admin/dashboard",
         element: (
           <ProtectedAdmin>
@@ -53,6 +64,7 @@ const router = createBrowserRouter([
           </ProtectedAdmin>
         ),
       },
+
       {
         path: "/admin/edit-flight/:flightNumber",
         element: (
@@ -107,6 +119,11 @@ const router = createBrowserRouter([
 ]);
 
 function App() {
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    dispatch(loadUserFromStorage());
+  }, [dispatch]);
   return <RouterProvider router={router} />;
 }
 

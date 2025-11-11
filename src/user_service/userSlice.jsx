@@ -1,4 +1,3 @@
-// src/redux/userSlice.jsx
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import {
   searchFlightsAPI,
@@ -9,7 +8,22 @@ import {
   updateUserAPI,
   getUserBookings,
   getUserTickets,
+  cancelBookingAPI,
 } from "./userAPI";
+import { toast } from "react-toastify";
+
+// ✅ Cancel booking
+export const cancelUserBooking = createAsyncThunk(
+  "user/cancelUserBooking",
+  async (bookingId, { rejectWithValue }) => {
+    try {
+      const data = await cancelBookingAPI(bookingId);
+      return data;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
 
 // ✅ Fetch user bookings
 export const fetchUserBookings = createAsyncThunk(
@@ -134,10 +148,17 @@ const userSlice = createSlice({
     bookings: [],
     tickets: [],
     seats: [],
+    cancelResponse: null,
+    showCancelModal: false,
     loading: false,
     error: null,
   },
-  reducers: {},
+  reducers: {
+    closeCancelModal: (state) => {
+      state.showCancelModal = false;
+      state.cancelResponse = null;
+    },
+  },
   extraReducers: (builder) => {
     builder
       .addCase(fetchFlights.pending, (state) => {
@@ -242,6 +263,31 @@ const userSlice = createSlice({
       .addCase(fetchUserTickets.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+      })
+      // ✅ Cancel user booking
+      .addCase(cancelUserBooking.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(cancelUserBooking.fulfilled, (state, action) => {
+        state.loading = false;
+        const cancelledId = action.payload.bookingId;
+        state.cancelResponse = action.payload;
+        state.showCancelModal = true;
+        // ✅ Update booking status locally
+        state.bookings = state.bookings.map((b) =>
+          String(b.id) === String(cancelledId)
+            ? { ...b, status: "CANCELLED" }
+            : b
+        );
+
+        toast.success(
+          action.payload.message || "Booking cancelled successfully"
+        );
+      })
+      .addCase(cancelUserBooking.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+        toast.error(action.payload || "Failed to cancel booking");
       });
   },
 });
@@ -256,3 +302,4 @@ export const selectBookingResponse = (state) => state.user.bookingResponse;
 export const selectSeats = (state) => state.user.seats;
 export const selectUserBookings = (state) => state.user.bookings;
 export const selectUserTickets = (state) => state.user.tickets;
+export const { closeCancelModal } = userSlice.actions;

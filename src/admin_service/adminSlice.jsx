@@ -7,9 +7,21 @@ import {
   deleteFlightAPI,
   generateSeatsAPI,
   getSeatsByFlightNumberAPI,
+  fetchAllBookingsAPI,
 } from "./adminAPI";
 
 // === Async Thunks ===
+// === Bookings ===
+export const fetchBookings = createAsyncThunk(
+  "admin/fetchBookings",
+  async (filters = {}, { rejectWithValue }) => {
+    try {
+      return await fetchAllBookingsAPI(filters);
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
 
 // Flights
 export const fetchFlights = createAsyncThunk(
@@ -98,6 +110,7 @@ const adminSlice = createSlice({
     totalElements: 0,
     selectedFlight: null,
     seats: [],
+    bookings: [],
     loading: false,
     error: null,
     message: null,
@@ -179,6 +192,18 @@ const adminSlice = createSlice({
       })
       .addCase(getSeatsByFlightNumber.rejected, (state, action) => {
         state.error = action.payload;
+      })
+      // === Fetch Bookings ===
+      .addCase(fetchBookings.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(fetchBookings.fulfilled, (state, action) => {
+        state.loading = false;
+        state.bookings = action.payload; // store array
+      })
+      .addCase(fetchBookings.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
       });
   },
 });
@@ -189,6 +214,7 @@ export const selectFlights = (state) => state.admin.flights;
 export const selectTotalElements = (state) => state.admin.totalElements;
 export const selectSelectedFlight = (state) => state.admin.selectedFlight;
 export const selectSeats = (state) => state.admin.seats;
+export const selectBookings = (state) => state.admin.bookings;
 export const selectLoading = (state) => state.admin.loading;
 export const selectError = (state) => state.admin.error;
 export const selectMessage = (state) => state.admin.message;

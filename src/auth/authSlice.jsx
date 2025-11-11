@@ -1,11 +1,12 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import { loginUser, signupUser, signOutUser } from "./authAPI";
+import { loginUser, signupUser, signOutUser, checkUsername } from "./authAPI";
 
 const initialState = {
   user: null,
   jwtToken: null,
   refreshToken: null,
   role: null,
+  usernameAvailable: null,
   status: "idle",
   error: null,
 };
@@ -35,6 +36,18 @@ export const signupUserAsync = createAsyncThunk(
   }
 );
 
+export const checkUsernameAvailabilityAsync = createAsyncThunk(
+  "auth/checkUsernameAvailability",
+  async (username, { rejectWithValue }) => {
+    try {
+      const response = await checkUsername(username);
+      return response;
+    } catch (error) {
+      return rejectWithValue(error.message || "Failed to check username");
+    }
+  }
+);
+
 export const signOutUserAsync = createAsyncThunk(
   "auth/signOutUser",
   async () => {
@@ -47,7 +60,21 @@ export const signOutUserAsync = createAsyncThunk(
 const authSlice = createSlice({
   name: "auth",
   initialState,
-  reducers: {},
+  reducers: {
+    loadUserFromStorage: (state) => {
+      const jwtToken = localStorage.getItem("jwtToken");
+      const refreshToken = localStorage.getItem("refreshToken");
+      const role = localStorage.getItem("role");
+      const user = localStorage.getItem("user");
+
+      if (jwtToken && user) {
+        state.jwtToken = jwtToken;
+        state.refreshToken = refreshToken;
+        state.role = role;
+        state.user = user;
+      }
+    },
+  },
   extraReducers: (builder) => {
     builder
       // ---------- LOGIN ----------
@@ -94,9 +121,23 @@ const authSlice = createSlice({
         state.refreshToken = null;
         state.role = null;
         state.error = null;
+      })
+      .addCase(checkUsernameAvailabilityAsync.pending, (state) => {
+        state.status = "checking";
+      })
+      .addCase(checkUsernameAvailabilityAsync.fulfilled, (state, action) => {
+        state.status = "idle";
+        state.usernameAvailable = true;
+      })
+      .addCase(checkUsernameAvailabilityAsync.rejected, (state) => {
+        state.status = "idle";
+        state.usernameAvailable = false;
       });
   },
 });
+
+// =============== Actions ===============
+export const { loadUserFromStorage } = authSlice.actions;
 
 // =============== Selectors ===============
 export const selectUser = (state) => state.auth.user;
