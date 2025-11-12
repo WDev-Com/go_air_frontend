@@ -1,9 +1,9 @@
 const BASE_URL = "http://localhost:8080/admin";
-const token = localStorage.getItem("jwtToken"); // 👈 get token from localStorage
 
 // Fetch bookings by filters
 export const fetchAllBookingsAPI = async (filters = {}) => {
   const params = new URLSearchParams();
+  const token = localStorage.getItem("jwtToken"); // 👈 get token from localStorage
 
   Object.entries(filters).forEach(([key, value]) => {
     if (value) params.append(key, value);
@@ -30,6 +30,8 @@ export const fetchAllBookingsAPI = async (filters = {}) => {
 // ✅ Unified API request helper with proper error handling
 export const apiRequest = async (endpoint, method = "GET", body = null) => {
   try {
+    const token = localStorage.getItem("jwtToken"); // 👈 get token from localStorage
+
     const response = await fetch(`${BASE_URL}${endpoint}`, {
       method,
       headers: {

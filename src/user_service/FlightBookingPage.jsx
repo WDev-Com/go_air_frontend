@@ -6,6 +6,7 @@ import {
   Button,
   Divider,
   IconButton,
+  CircularProgress,
 } from "@mui/material";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
@@ -29,18 +30,15 @@ const FlightBookingPage = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
+  const [bookingLoading, setBookingLoading] = useState(false);
 
   const filters = location.state?.filtersData || {};
   const selectedFlights = location.state?.selectedFlights || {};
   const tripType = filters.tripType;
-  // console.log(tripType);
-  // console.log(selectedFlights);
   const loggedUser = useSelector(selectUser);
   const user = useSelector(selectUserDetails);
-
   const loading = useSelector(selectLoading);
-  const seats = useSelector(selectSeats);
-  // console.log(seats);
+
   // === MULTI CITY STATE ===
   const routeKeys = Object.keys(selectedFlights);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -79,6 +77,9 @@ const FlightBookingPage = () => {
       })
     )
   );
+
+  // New state to store seat maps by flight number
+  const [seatMaps, setSeatMaps] = useState({}); // { [flightNo]: seatsArray }
 
   // Generate one common alphanumeric booking number for all flights
   const bookingNo = generateBookingNo();
@@ -120,20 +121,39 @@ const FlightBookingPage = () => {
     if (loggedUser) {
       dispatch(fetchUserByUsername(loggedUser));
     }
-    // console.log("tripType", tripType);
-    if (
-      tripType === "ONE_WAY" &&
-      selectedFlights[routeKeys[currentIndex]].flightNumber
-    ) {
-      dispatch(
-        fetchSeatsByFlightNumber(
-          selectedFlights[routeKeys[currentIndex]].flightNumber
-        )
-      );
-    } else if (tripType !== "ONE_WAY" && currentFlight?.flightNumber) {
-      dispatch(fetchSeatsByFlightNumber(currentFlight.flightNumber));
+  }, [dispatch, loggedUser]);
+
+  // Fetch seats for ALL selected flights on mount
+  useEffect(() => {
+    const fetchAllSeatMaps = async () => {
+      // For multi-segment trips
+      const flightsToFetch =
+        tripType === "ONE_WAY"
+          ? [selectedFlights[routeKeys[0]]]
+          : Object.values(selectedFlights);
+
+      const seatMapObj = {};
+      for (const flight of flightsToFetch) {
+        // Dispatch fetch for each flight
+        const action = await dispatch(
+          fetchSeatsByFlightNumber(flight.flightNumber)
+        );
+        // Assuming action.payload has the seat map
+        seatMapObj[flight.flightNumber] = action.payload;
+      }
+      setSeatMaps(seatMapObj);
+    };
+
+    if (Object.keys(selectedFlights).length > 0) {
+      fetchAllSeatMaps();
     }
-  }, [dispatch, loggedUser, tripType]);
+  }, [dispatch, selectedFlights, tripType]);
+
+  // Instead of useSelector(selectSeats), we now use seatMaps[flightNumber]
+  const displayedSeatMap =
+    tripType === "ONE_WAY"
+      ? seatMaps[selectedFlights[routeKeys[0]]?.flightNumber]
+      : seatMaps[selectedFlights[routeKeys[currentIndex]]?.flightNumber];
 
   // === SYNC CONTACT INFO FROM USER ===
   useEffect(() => {
@@ -320,7 +340,7 @@ const FlightBookingPage = () => {
           }
         });
       });
-
+      setBookingLoading(true);
       // Prepare payload for backend
       const bookingPayload =
         tripType === "ONE_WAY"
@@ -330,11 +350,6 @@ const FlightBookingPage = () => {
               tripType, // include the overall trip type
             }));
 
-      // console.log("Booking Payload:", bookingPayload);
-      // console.log("Booking Payload:", {
-      //   userID: user.userID,
-      //   bookingData: bookingPayload,
-      // });
       // Call Redux asyncThunk
       const result = await dispatch(
         bookFlight({ userID: user.userID, bookingData: bookingPayload })
@@ -346,13 +361,52 @@ const FlightBookingPage = () => {
     } catch (err) {
       console.error("Booking failed:", err);
       alert(err.message || "Booking failed. Please check your inputs.");
+    } finally {
+      setBookingLoading(false);
     }
   };
+
+  if (bookingLoading)
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          minHeight: "50vh",
+          gap: 2,
+          p: 3,
+        }}
+      >
+        <CircularProgress size={60} thickness={5} />
+        <Typography variant="h6" sx={{ mt: 1 }}>
+          Processing your booking...
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          Please wait while we confirm your seats and generate your booking.
+        </Typography>
+      </Box>
+    );
+
   // console.log(flight);
   if (loading)
     return (
-      <Box sx={{ textAlign: "center", mt: 5 }}>
-        <Typography variant="h6">Loading flight details...</Typography>
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          minHeight: "50vh", // centers vertically
+          gap: 2, // space between spinner and text
+          p: 3, // padding around content
+        }}
+      >
+        <CircularProgress size={60} thickness={5} />
+        <Typography variant="h6" sx={{ mt: 1 }}>
+          Loading flight details...
+        </Typography>
       </Box>
     );
 
@@ -428,7 +482,8 @@ const FlightBookingPage = () => {
 
         <Box sx={{ flex: 1, overflowY: "auto", p: 2 }}>
           <SeatMap
-            seats={seats}
+            // seats={seats}
+            seats={displayedSeatMap}
             aircraftSize={currentFlight?.aircraftSize}
             selectedSeats={(bookings[currentIndex]?.passengers || [])
               .map((p) => p.seatNo)
@@ -479,7 +534,9 @@ const FlightBookingPage = () => {
           variant="contained"
           fullWidth
           sx={{ py: 1.5, fontWeight: "bold", borderRadius: 2 }}
-          onClick={handleBooking}
+          onClick={() => {
+            handleBooking();
+          }}
           disabled={!isFormComplete || loading}
         >
           {loading

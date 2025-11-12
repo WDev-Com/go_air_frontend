@@ -138,6 +138,8 @@ const AdminFlightsPage = () => {
     }
   };
 
+  // console.log(loading);
+
   return (
     <>
       <Box sx={{ p: 4, mb: -3.5, backgroundColor: "#f9fafb" }}>

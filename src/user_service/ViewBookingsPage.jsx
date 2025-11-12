@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   fetchUserByUsername,
@@ -8,7 +8,7 @@ import {
   selectLoading,
   selectError,
   cancelUserBooking,
-  closeCancelModal, // ✅ added
+  closeCancelModal,
 } from "./userSlice";
 import { useNavigate } from "react-router-dom";
 import {
@@ -16,9 +16,10 @@ import {
   CircularProgress,
   Box,
   Typography,
-  Modal, // ✅ added
+  Modal,
 } from "@mui/material";
 import { selectUser } from "../auth/authSlice";
+import ConfirmModal from "../component/ConfirmModal";
 
 const BookingsPage = () => {
   const dispatch = useDispatch();
@@ -28,28 +29,45 @@ const BookingsPage = () => {
   const bookings = useSelector(selectUserBookings) || [];
   const loading = useSelector(selectLoading);
   const error = useSelector(selectError);
-  const username = useSelector(selectUser);
+  // const username = useSelector(selectUser);
 
-  // ✅ Modal selectors
   const cancelResponse = useSelector((state) => state.user.cancelResponse);
   const showCancelModal = useSelector((state) => state.user.showCancelModal);
 
-  useEffect(() => {
-    if (!user && username) {
-      dispatch(fetchUserByUsername(username));
-    }
-  }, [dispatch, user, username]);
+  // ✅ local modal state for confirmation
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [selectedBookingNo, setSelectedBookingNo] = useState(null);
 
   useEffect(() => {
-    if (user?.userID) {
-      dispatch(fetchUserBookings());
-    }
-  }, [dispatch, user?.userID]);
+    dispatch(fetchUserBookings());
+  }, []);
+
+  // useEffect(() => {
+  //   if (!user && username) {
+  //     dispatch(fetchUserByUsername(username));
+  //   }
+  // }, [dispatch, user, username]);
+
+  // useEffect(() => {
+  //   if (user?.userID) {
+  //     dispatch(fetchUserBookings());
+  //   }
+  // }, [dispatch, user?.userID]);
 
   const handleCancel = (bookingNo) => {
-    if (window.confirm("Are you sure you want to cancel this booking?")) {
-      dispatch(cancelUserBooking(bookingNo));
-    }
+    setSelectedBookingNo(bookingNo);
+    setConfirmOpen(true);
+  };
+
+  const handleConfirmCancel = () => {
+    dispatch(cancelUserBooking(selectedBookingNo));
+    setConfirmOpen(false);
+    setSelectedBookingNo(null);
+  };
+
+  const handleCloseConfirm = () => {
+    setConfirmOpen(false);
+    setSelectedBookingNo(null);
   };
 
   const handleCloseModal = () => {
@@ -88,25 +106,52 @@ const BookingsPage = () => {
 
   if (error) {
     return (
-      <Typography color="error" sx={{ textAlign: "center", mt: 3 }}>
-        {error}
-      </Typography>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "70vh",
+        }}
+      >
+        <Typography color="error" sx={{ textAlign: "center", mt: 3 }}>
+          {error}
+        </Typography>
+      </Box>
     );
   }
 
   if (!user) {
     return (
-      <Typography sx={{ textAlign: "center", mt: 3 }}>
-        Fetching user details...
-      </Typography>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "70vh",
+        }}
+      >
+        <Typography sx={{ textAlign: "center", mt: 3 }}>
+          Fetching user details...
+        </Typography>
+      </Box>
     );
   }
 
   if (bookings.length === 0) {
     return (
-      <Typography sx={{ textAlign: "center", mt: 3 }}>
-        No bookings found.
-      </Typography>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "70vh",
+        }}
+      >
+        <Typography sx={{ textAlign: "center", mt: 3 }}>
+          No bookings found.
+        </Typography>
+      </Box>
     );
   }
 
@@ -124,8 +169,28 @@ const BookingsPage = () => {
             borderRadius: "8px",
             p: 2,
             mb: 2,
+            position: "relative",
           }}
         >
+          {/* ✅ Booking Status on Top-Right */}
+          <Typography
+            variant="body2"
+            sx={{
+              position: "absolute",
+              top: 8,
+              right: 12,
+              fontWeight: "bold",
+              color:
+                b.status === "CANCELLED"
+                  ? "error.main"
+                  : b.status === "CONFIRMED"
+                  ? "success.main"
+                  : "text.secondary",
+            }}
+          >
+            {b.status}
+          </Typography>
+
           <Typography>Booking No : {b.bookingNo}</Typography>
           <Typography variant="h6">
             {b.airline} ({b.flightNumber})
@@ -142,21 +207,22 @@ const BookingsPage = () => {
             variant="contained"
             color="primary"
             sx={{ mt: 2 }}
-            onClick={() => {
-              navigate(`/tickets/${b.id}`);
-            }}
+            onClick={() => navigate(`/tickets/${b.id}`)}
           >
             View Tickets
           </Button>
 
-          <Button
-            variant="contained"
-            color="error"
-            sx={{ mt: 2, mx: 2 }}
-            onClick={() => handleCancel(b.bookingNo)}
-          >
-            Cancel Booking
-          </Button>
+          {/* ✅ Hide cancel button if already cancelled */}
+          {b.status !== "CANCELLED" && (
+            <Button
+              variant="contained"
+              color="error"
+              sx={{ mt: 2, mx: 2 }}
+              onClick={() => handleCancel(b.bookingNo)}
+            >
+              Cancel Booking
+            </Button>
+          )}
         </Box>
       ))}
 
@@ -207,6 +273,18 @@ const BookingsPage = () => {
           </Button>
         </Box>
       </Modal>
+
+      {/* ✅ Universal Confirm Modal */}
+      <ConfirmModal
+        open={confirmOpen}
+        title="Cancel Booking"
+        message="Are you sure you want to cancel this booking?"
+        confirmText="Yes, Cancel"
+        cancelText="No"
+        confirmColor="error"
+        onConfirm={handleConfirmCancel}
+        onCancel={handleCloseConfirm}
+      />
     </Box>
   );
 };

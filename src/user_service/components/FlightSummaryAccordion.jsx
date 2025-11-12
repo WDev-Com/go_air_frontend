@@ -119,7 +119,7 @@ const FlightSummaryAccordion = ({
                 {/* Airline + Flight Number */}
                 <Grid item xs={12} md={3}>
                   <Typography fontWeight="bold" variant="body1">
-                    {flight.airlineName || "Airline"}
+                    {flight.airline || "Airline"}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
                     {flight.flightNumber} • {flight.aircraftType || "Airbus"}

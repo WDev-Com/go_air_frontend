@@ -123,6 +123,7 @@ function App() {
 
   useEffect(() => {
     dispatch(loadUserFromStorage());
+    dispatch(fetchUserByUsername(localStorage.getItem(user)));
   }, [dispatch]);
   return <RouterProvider router={router} />;
 }

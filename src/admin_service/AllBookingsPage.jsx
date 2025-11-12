@@ -10,7 +10,10 @@ import {
   Paper,
   TablePagination,
   Typography,
+  CardContent,
   Button,
+  Card,
+  Divider,
   CircularProgress,
 } from "@mui/material";
 import { useDispatch, useSelector } from "react-redux";
@@ -71,7 +74,7 @@ const AllBookingsPage = () => {
     setRowsPerPage(parseInt(event.target.value, 10));
     setPage(0);
   };
-
+  // console.log(loading);
   if (loading) {
     return (
       <Box
@@ -104,70 +107,76 @@ const AllBookingsPage = () => {
 
         {/* Bookings list / table can go below */}
       </Box>
-      <Box p={3}>
-        <Typography variant="h5" mb={1}>
-          Bookings
-        </Typography>
+      <Box sx={{ p: 4, backgroundColor: "#f9fafb", minHeight: "100vh" }}>
+        <Card sx={{ maxWidth: "100%", boxShadow: 3, borderRadius: 3 }}>
+          <CardContent>
+            <Typography variant="h5" fontWeight={600} gutterBottom>
+              ✈️ Flight Bookings
+            </Typography>
 
-        <TableContainer component={Paper}>
-          <Table>
-            <TableHead sx={{ backgroundColor: "#1976d2" }}>
-              <TableRow>
-                <TableCell>Booking No</TableCell>
-                <TableCell>User ID</TableCell>
-                <TableCell>Username</TableCell>
-                <TableCell>Flight No</TableCell>
-                <TableCell>Trip Type</TableCell>
-                <TableCell>Departure Date</TableCell>
-                <TableCell>Departure Time</TableCell>
-                <TableCell>Arrival Date</TableCell>
-                <TableCell>Arrival Time</TableCell>
-                <TableCell>Contact Email</TableCell>
-                <TableCell>Passenger Count</TableCell>
-                <TableCell>Total Amount</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell>Fare Type</TableCell>
-                <TableCell>Journey Status</TableCell>
-                <TableCell>Booking Time</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {bookings
-                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                .map((b) => (
-                  <TableRow key={b.id}>
-                    <TableCell>{b.bookingNo}</TableCell>
-                    <TableCell>{b.userID}</TableCell>
-                    <TableCell>{b.username}</TableCell>
-                    <TableCell>{b.flightNumber}</TableCell>
-                    <TableCell>{b.tripType.replace("_", " ")}</TableCell>
-                    <TableCell>{b.departureDate}</TableCell>
-                    <TableCell>{b.departureTime}</TableCell>
-                    <TableCell>{b.arrivalDate}</TableCell>
-                    <TableCell>{b.arrivalTime}</TableCell>
-                    <TableCell>{b.contactEmail}</TableCell>
-                    <TableCell>{b.passengerCount}</TableCell>
-                    <TableCell>{b.totalAmount}</TableCell>
-                    <TableCell>{b.status}</TableCell>
-                    <TableCell>{b.specialFareType}</TableCell>
-                    <TableCell>{b.journeyStatus}</TableCell>
-                    <TableCell>
-                      {" "}
-                      {new Date(b.bookingTime).toLocaleString("en-IN", {
-                        day: "2-digit",
-                        month: "short",
-                        year: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                        second: "2-digit",
-                        hour12: true,
-                      })}
-                    </TableCell>
+            <Divider sx={{ mb: 2 }} />
+
+            <TableContainer component={Paper}>
+              <Table>
+                <TableHead sx={{ backgroundColor: "#1976d2" }}>
+                  <TableRow>
+                    <TableCell>Booking No</TableCell>
+                    <TableCell>User ID</TableCell>
+                    <TableCell>Username</TableCell>
+                    <TableCell>Flight No</TableCell>
+                    <TableCell>Trip Type</TableCell>
+                    <TableCell>Departure Date</TableCell>
+                    <TableCell>Departure Time</TableCell>
+                    <TableCell>Arrival Date</TableCell>
+                    <TableCell>Arrival Time</TableCell>
+                    <TableCell>Contact Email</TableCell>
+                    <TableCell>Passenger Count</TableCell>
+                    <TableCell>Total Amount</TableCell>
+                    <TableCell>Status</TableCell>
+                    <TableCell>Fare Type</TableCell>
+                    <TableCell>Journey Status</TableCell>
+                    <TableCell>Booking Time</TableCell>
                   </TableRow>
-                ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
+                </TableHead>
+                <TableBody>
+                  {bookings
+                    .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                    .map((b) => (
+                      <TableRow key={b.id}>
+                        <TableCell>{b.bookingNo}</TableCell>
+                        <TableCell>{b.userID}</TableCell>
+                        <TableCell>{b.username}</TableCell>
+                        <TableCell>{b.flightNumber}</TableCell>
+                        <TableCell>{b.tripType.replace("_", " ")}</TableCell>
+                        <TableCell>{b.departureDate}</TableCell>
+                        <TableCell>{b.departureTime}</TableCell>
+                        <TableCell>{b.arrivalDate}</TableCell>
+                        <TableCell>{b.arrivalTime}</TableCell>
+                        <TableCell>{b.contactEmail}</TableCell>
+                        <TableCell>{b.passengerCount}</TableCell>
+                        <TableCell>{b.totalAmount}</TableCell>
+                        <TableCell>{b.status}</TableCell>
+                        <TableCell>{b.specialFareType}</TableCell>
+                        <TableCell>{b.journeyStatus}</TableCell>
+                        <TableCell>
+                          {" "}
+                          {new Date(b.bookingTime).toLocaleString("en-IN", {
+                            day: "2-digit",
+                            month: "short",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            second: "2-digit",
+                            hour12: true,
+                          })}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </CardContent>
+        </Card>
 
         <TablePagination
           component="div"

@@ -51,8 +51,8 @@ export default function Navbar() {
   const pages =
     role === "ADMIN"
       ? [
-          { name: "My Admin", path: "/admin/dashboard" },
-          { name: "All Bookings", path: "/admin/all-bookings" },
+          { name: "Admin Dashboard", path: "/admin/dashboard" },
+          { name: "View All Bookings", path: "/admin/all-bookings" },
           { name: "Create Flights", path: "/admin/create-flights" },
         ]
       : [
@@ -180,11 +180,11 @@ export default function Navbar() {
                   {role === "ADMIN" && (
                     <MenuItem
                       onClick={() => {
-                        navigate("/admin/bookings");
+                        navigate("/admin/all-bookings");
                         handleMenuClose();
                       }}
                     >
-                      Manage Bookings
+                      View All Bookings
                     </MenuItem>
                   )}
 

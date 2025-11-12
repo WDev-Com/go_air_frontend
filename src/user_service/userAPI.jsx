@@ -1,12 +1,13 @@
 import { toast } from "react-toastify";
 
 const BASE_URL = "http://localhost:8080";
-const token = localStorage.getItem("jwtToken"); // 👈 get token from localStorage
 
 // ===============================
 // ✈️ Search Flights
 // ===============================
 export const searchFlightsAPI = async (params) => {
+  const token = localStorage.getItem("jwtToken"); // 👈 get token from localStorage
+
   const filteredParams = Object.fromEntries(
     Object.entries(params).filter(
       ([, value]) => value !== undefined && value !== null && value !== ""
@@ -53,6 +54,8 @@ export const searchFlightsAPI = async (params) => {
 // ===============================
 export const getUserByUsernameAPI = async (username) => {
   try {
+    const token = localStorage.getItem("jwtToken"); // 👈 get token from localStorage
+
     const res = await fetch(`${BASE_URL}/user/username/${username}`, {
       method: "GET",
       headers: {
@@ -80,6 +83,8 @@ export const getUserByUsernameAPI = async (username) => {
 // ===============================
 export const getFlightByNumberAPI = async (flightNumber) => {
   try {
+    const token = localStorage.getItem("jwtToken"); // 👈 get token from localStorage
+
     const res = await fetch(`${BASE_URL}/admin/flights/${flightNumber}`, {
       method: "GET",
       headers: {
@@ -107,6 +112,8 @@ export const getFlightByNumberAPI = async (flightNumber) => {
 // ===============================
 export const bookFlightAPI = async (userID, bookingData) => {
   try {
+    const token = localStorage.getItem("jwtToken"); // 👈 get token from localStorage
+
     const res = await fetch(`${BASE_URL}/user/book/${userID}`, {
       method: "POST",
       headers: {
@@ -133,7 +140,9 @@ export const bookFlightAPI = async (userID, bookingData) => {
 // ===============================
 export const getSeatsByFlightNumberAPI = async (flightNumber) => {
   try {
-    const res = await fetch(`${BASE_URL}/admin/flight/seats/${flightNumber}`, {
+    const token = localStorage.getItem("jwtToken"); // 👈 get token from localStorage
+
+    const res = await fetch(`${BASE_URL}/user/flight/seats/${flightNumber}`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -154,6 +163,8 @@ export const getSeatsByFlightNumberAPI = async (flightNumber) => {
 // 🔧 Update user details
 // ===============================
 export const updateUserAPI = async (username, updatedData) => {
+  const token = localStorage.getItem("jwtToken"); // 👈 get token from localStorage
+
   const response = await fetch(`${BASE_URL}/auth/updateuser/${username}`, {
     method: "PATCH",
     headers: {
@@ -177,6 +188,8 @@ export const updateUserAPI = async (username, updatedData) => {
 // ===============================
 export const getUserBookings = async (userId) => {
   try {
+    const token = localStorage.getItem("jwtToken"); // 👈 get token from localStorage
+
     const res = await fetch(`${BASE_URL}/user/bookings/${userId}`, {
       method: "GET",
       headers: {
@@ -199,6 +212,8 @@ export const getUserBookings = async (userId) => {
 // ===============================
 export const getUserTickets = async (userId, bookingId) => {
   try {
+    const token = localStorage.getItem("jwtToken"); // 👈 get token from localStorage
+
     const res = await fetch(`${BASE_URL}/user/tickets/${userId}/${bookingId}`, {
       method: "GET",
       headers: {
@@ -221,6 +236,8 @@ export const getUserTickets = async (userId, bookingId) => {
 // ===============================
 export const cancelBookingAPI = async (bookingId) => {
   try {
+    const token = localStorage.getItem("jwtToken"); // 👈 get token from localStorage
+
     const res = await fetch(`${BASE_URL}/user/cancel/${bookingId}`, {
       method: "PUT",
       headers: {
