@@ -153,6 +153,19 @@ const userSlice = createSlice({
       state.showCancelModal = false;
       state.cancelResponse = null;
     },
+    resetAllUserState: (state) => {
+      state.flights = {};
+      state.userDetails = null;
+      state.flightDetails = null;
+      state.bookingResponse = null;
+      state.bookings = [];
+      state.tickets = [];
+      state.seats = [];
+      state.cancelResponse = null;
+      state.showCancelModal = false;
+      state.loading = false;
+      state.error = null;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -298,4 +311,4 @@ export const selectBookingResponse = (state) => state.user.bookingResponse;
 export const selectSeats = (state) => state.user.seats;
 export const selectUserBookings = (state) => state.user.bookings;
 export const selectUserTickets = (state) => state.user.tickets;
-export const { closeCancelModal } = userSlice.actions;
+export const { closeCancelModal, resetAllUserState } = userSlice.actions;

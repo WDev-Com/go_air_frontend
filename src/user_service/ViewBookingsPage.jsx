@@ -18,7 +18,6 @@ import {
   Typography,
   Modal,
 } from "@mui/material";
-import { selectUser } from "../auth/authSlice";
 import ConfirmModal from "../component/ConfirmModal";
 
 const BookingsPage = () => {
@@ -29,18 +28,22 @@ const BookingsPage = () => {
   const bookings = useSelector(selectUserBookings) || [];
   const loading = useSelector(selectLoading);
   const error = useSelector(selectError);
-  // const username = useSelector(selectUser);
 
   const cancelResponse = useSelector((state) => state.user.cancelResponse);
   const showCancelModal = useSelector((state) => state.user.showCancelModal);
 
-  // ✅ local modal state for confirmation
+  // local modal state for confirmation
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [selectedBookingNo, setSelectedBookingNo] = useState(null);
 
   useEffect(() => {
+    dispatch(fetchUserByUsername(localStorage.getItem("user")));
+  }, []);
+
+  useEffect(() => {
+    if (!user || !user.userID) return;
     dispatch(fetchUserBookings(user.userID));
-  }, [dispatch]);
+  }, [user?.userID, dispatch]);
 
   const handleCancel = (bookingNo) => {
     setSelectedBookingNo(bookingNo);

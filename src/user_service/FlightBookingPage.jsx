@@ -39,6 +39,9 @@ const FlightBookingPage = () => {
   const user = useSelector(selectUserDetails);
   const loading = useSelector(selectLoading);
 
+  useEffect(() => {
+    dispatch(fetchUserByUsername(localStorage.getItem("user")));
+  }, []);
   // === MULTI CITY STATE ===
   const routeKeys = Object.keys(selectedFlights);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -48,7 +51,7 @@ const FlightBookingPage = () => {
   };
   const currentRouteKey =
     tripType !== "ONE_WAY" ? routeKeys[currentIndex] : null;
-  console.log("currentRouteKey : ", currentRouteKey);
+  // console.log("currentRouteKey : ", currentRouteKey);
   // Only for maintaining reference of current flight in multi-city
   const currentFlight = selectedFlights[currentRouteKey];
 
@@ -323,53 +326,6 @@ const FlightBookingPage = () => {
   };
 
   // === BOOKING SUBMISSION ===
-  // const handleBooking = async () => {
-  //   try {
-  //     if (!user?.userID) throw new Error("User not logged in");
-
-  //     if (!bookings || bookings.length === 0)
-  //       throw new Error("No flights selected for booking");
-  //     // console.log("Bookings to submit:", bookings);
-  //     // Ensure every booking has passengers with assigned seats
-  //     bookings.forEach((b, idx) => {
-  //       if (!b.passengers || b.passengers.length === 0) {
-  //         throw new Error(`No passengers added for booking ${idx + 1}`);
-  //       }
-  //       b.passengers.forEach((p, pIdx) => {
-  //         if (!p.seatNo) {
-  //           throw new Error(
-  //             `Seat not selected for passenger ${p.name} on flight ${b.flightNumber}`
-  //           );
-  //         }
-  //       });
-  //     });
-  //     setBookingLoading(true);
-  //     // Prepare payload for backend
-  //     const bookingPayload =
-  //       tripType === "ONE_WAY"
-  //         ? [bookings[0]] // single flight
-  //         : bookings.map((b) => ({
-  //             ...b,
-  //             tripType, // include the overall trip type
-  //           }));
-
-  //     // Call Redux asyncThunk
-  //     const result = await dispatch(
-  //       bookFlight({ userID: user.userID, bookingData: bookingPayload })
-  //     ).unwrap();
-
-  //     // console.log("Booking successful:", result);
-
-  //     navigate("/booking-completed", { state: result });
-  //   } catch (err) {
-  //     console.error("Booking failed:", err);
-  //     alert(err.message || "Booking failed. Please check your inputs.");
-  //   } finally {
-  //     setBookingLoading(false);
-  //   }
-  // };
-
-  // === BOOKING SUBMISSION ===
   const handleBooking = async () => {
     try {
       if (!user?.userID) throw new Error("User not logged in");
@@ -453,7 +409,7 @@ const FlightBookingPage = () => {
     );
 
   // console.log(flight);
-  if (loading)
+  if (loading || user?.userID == null)
     return (
       <Box
         sx={{

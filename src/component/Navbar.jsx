@@ -22,6 +22,7 @@ import {
 } from "../auth/authSlice";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
+import { resetAllUserState } from "../user_service/userSlice";
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
@@ -44,6 +45,7 @@ export default function Navbar() {
 
   const logout = () => {
     dispatch(signOutUserAsync());
+    dispatch(resetAllUserState());
     navigate("/");
   };
 
