@@ -1,12 +1,16 @@
 import React, { useEffect } from "react";
-import { createBrowserRouter, RouterProvider, Outlet } from "react-router-dom";
+import {
+  createBrowserRouter,
+  RouterProvider,
+  Outlet,
+  Navigate,
+} from "react-router-dom";
 import Login from "./auth/Login";
 import Signup from "./auth/Signup";
 import Navbar from "./component/Navbar";
 import GoAirlineFooter from "./component/GoAirlineFooter";
 import HomePage from "./pages/HomePage";
 import FlightBookingPage from "./user_service/FlightBookingPage";
-import BookingCompleted from "./user_service/components/BookingCompleted";
 import FlightSearchResultPage from "./user_service/FlightSearchResultPage";
 import ProtectedUser from "./auth/ProtectedUser";
 import MyAccountPage from "./user_service/MyAccountPage ";
@@ -21,7 +25,10 @@ import CreateFlightPage from "./admin_service/CreateFlightPage";
 import AllBookingsPage from "./admin_service/AllBookingsPage";
 import { useDispatch } from "react-redux";
 import { loadUserFromStorage } from "./auth/authSlice";
-// ✅ Layout component that wraps Navbar + Outlet + Footer
+import { fetchUserByUsername } from "./user_service/userSlice";
+import SuccessPage from "./user_service/SuccessPage";
+
+// Layout component that wraps Navbar + Outlet + Footer
 function Layout() {
   return (
     <>
@@ -34,9 +41,18 @@ function Layout() {
 
 const router = createBrowserRouter([
   {
-    element: <Layout />, // ✅ Navbar + Footer inside this layout
+    element: <Layout />, //  Navbar + Footer inside this layout
     children: [
-      { path: "/", element: <HomePage /> },
+      {
+        path: "/",
+        element: <HomePage />,
+      },
+
+      {
+        path: "/success",
+        element: <SuccessPage />,
+      },
+
       { path: "/flight-search-results", element: <FlightSearchResultPage /> },
       { path: "/login", element: <Login /> },
       { path: "/signup", element: <Signup /> },
@@ -101,14 +117,7 @@ const router = createBrowserRouter([
         path: "/my-account",
         element: <MyAccountPage />,
       },
-      {
-        path: "/booking-completed",
-        element: (
-          <ProtectedUser>
-            <BookingCompleted />
-          </ProtectedUser>
-        ),
-      },
+
       {
         path: "/about",
         element: <AboutPage />,
@@ -123,7 +132,9 @@ function App() {
 
   useEffect(() => {
     dispatch(loadUserFromStorage());
-    dispatch(fetchUserByUsername(localStorage.getItem(user)));
+    if (localStorage.getItem("user")) {
+      dispatch(fetchUserByUsername(localStorage.getItem("user")));
+    }
   }, [dispatch]);
   return <RouterProvider router={router} />;
 }

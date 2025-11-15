@@ -2,85 +2,76 @@ import { toast } from "react-toastify";
 
 const BASE_URL = "http://localhost:8080";
 
-// ===============================
-// ✈️ Search Flights
-// ===============================
+export const extractMessage = (msg) => {
+  if (!msg) return "";
+
+  const match = msg.match(/\((.*?)\)/);
+
+  return match ? match[1].trim() : msg.trim();
+};
+
+// Search Flights
 export const searchFlightsAPI = async (params) => {
-  const token = localStorage.getItem("jwtToken"); // 👈 get token from localStorage
+  const token = localStorage.getItem("jwtToken");
 
   const filteredParams = Object.fromEntries(
-    Object.entries(params).filter(
-      ([, value]) => value !== undefined && value !== null && value !== ""
-    )
+    Object.entries(params).filter(([_, value]) => value)
   );
 
-  const queryParams = new URLSearchParams();
-  Object.entries(filteredParams).forEach(([key, value]) => {
-    if (Array.isArray(value)) {
-      value.forEach((v) => queryParams.append(key, v));
-    } else {
-      queryParams.append(key, value);
-    }
-  });
+  const queryParams = new URLSearchParams(filteredParams).toString();
+  const url = `${BASE_URL}/user/flights/search?${queryParams}`;
 
-  const url = `${BASE_URL}/user/flights/search?${queryParams.toString()}`;
   try {
     const response = await fetch(url, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
-        ...(token && { Authorization: `Bearer ${token}` }), // ✅ Bearer token
+        ...(token && { Authorization: `Bearer ${token}` }),
       },
     });
 
     const data = await response.json().catch(() => ({}));
+
     if (!response.ok) {
-      throw new Error(
-        data?.message ||
-          data?.error ||
-          `HTTP ${response.status}: Failed to fetch flights`
+      toast.error(
+        extractMessage(data?.message) ||
+          `HTTP ${response.status} : Failed to fetch flights`
       );
     }
 
     return data;
   } catch (error) {
-    console.error("❌ searchFlightsAPI Error:", error.message);
+    toast.error(extractMessage(error.message));
     throw error;
   }
 };
 
-// ===============================
-// 👤 Get user by username
-// ===============================
+// Get user by username
 export const getUserByUsernameAPI = async (username) => {
   try {
-    const token = localStorage.getItem("jwtToken"); // 👈 get token from localStorage
+    const token = localStorage.getItem("jwtToken");
 
     const res = await fetch(`${BASE_URL}/user/username/${username}`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
-        ...(token && { Authorization: `Bearer ${token}` }), // ✅ Bearer token
+        ...(token && { Authorization: `Bearer ${token}` }),
       },
     });
 
     if (!res.ok) {
-      const errorText = await res.text();
-      throw new Error(
-        `Failed to fetch user details: ${errorText || res.statusText}`
-      );
+      const err = await res.text();
+      toast.error(extractMessage(err) || "Failed to fetch user");
     }
 
     return await res.json();
   } catch (error) {
-    console.error("❌ getUserByUsernameAPI:", error);
-    throw new Error("Unable to retrieve user details.");
+    toast.error(extractMessage(error.message));
+    throw error;
   }
 };
 
-// ===============================
-// ✈️ Get flight by flight number
-// ===============================
+// Get flight by flight number
 export const getFlightByNumberAPI = async (flightNumber) => {
   try {
     const token = localStorage.getItem("jwtToken"); // 👈 get token from localStorage
@@ -95,49 +86,53 @@ export const getFlightByNumberAPI = async (flightNumber) => {
 
     if (!res.ok) {
       const errorText = await res.text();
-      throw new Error(
+      toast.error(
         `Failed to fetch flight details: ${errorText || res.statusText}`
       );
     }
 
     return await res.json();
   } catch (error) {
+    toast.error(extractMessage(error));
     console.error("❌ getFlightByNumberAPI:", error);
     throw new Error("Unable to retrieve flight details.");
   }
 };
 
-// ===============================
-// 🧾 Book flight
-// ===============================
-export const bookFlightAPI = async (userID, bookingData) => {
+// Book flight
+export const bookFlightAPI = async (userID, bookingPayload) => {
   try {
-    const token = localStorage.getItem("jwtToken"); // 👈 get token from localStorage
+    const token = localStorage.getItem("jwtToken");
 
-    const res = await fetch(`${BASE_URL}/user/book/${userID}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...(token && { Authorization: `Bearer ${token}` }),
-      },
-      body: JSON.stringify(bookingData),
-    });
+    const res = await fetch(
+      `${BASE_URL}/api/payment/create-checkout-session/${userID}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+        body: JSON.stringify(bookingPayload),
+      }
+    );
+
+    const data = await res.json();
 
     if (!res.ok) {
-      const errorText = await res.text();
-      throw new Error(`Booking failed: ${errorText || res.statusText}`);
+      toast.error(extractMessage(data?.message) || "Booking failed");
     }
 
-    return await res.json();
+    // redirect to Stripe
+    window.location.href = data.url;
+
+    return data;
   } catch (error) {
-    console.error("❌ bookFlightAPI:", error);
-    throw new Error("Unable to complete booking.");
+    toast.error(extractMessage(error.message));
+    throw error;
   }
 };
 
-// ===============================
-// 💺 Get seats by flight number
-// ===============================
+// Get seats by flight number
 export const getSeatsByFlightNumberAPI = async (flightNumber) => {
   try {
     const token = localStorage.getItem("jwtToken"); // 👈 get token from localStorage
@@ -150,18 +145,17 @@ export const getSeatsByFlightNumberAPI = async (flightNumber) => {
       },
     });
 
-    if (!res.ok) throw new Error("Failed to fetch seats");
+    if (!res.ok) toast.error("Failed to fetch seats");
 
     return await res.json();
   } catch (error) {
-    console.error("❌ getSeatsByFlightNumberAPI:", error);
+    toast.error(extractMessage(error.message));
+    console.error(" getSeatsByFlightNumberAPI:", error);
     throw error;
   }
 };
 
-// ===============================
-// 🔧 Update user details
-// ===============================
+// Update user details
 export const updateUserAPI = async (username, updatedData) => {
   const token = localStorage.getItem("jwtToken"); // 👈 get token from localStorage
 
@@ -177,15 +171,13 @@ export const updateUserAPI = async (username, updatedData) => {
   if (response.ok) toast.success("User details updated successfully");
   else {
     toast.error("Failed to update user details");
-    throw new Error("Failed to update user details");
+    // throw new Error("Failed to update user details");
   }
 
   return await response.json();
 };
 
-// ===============================
-// 📋 Get all bookings for user
-// ===============================
+// Get all bookings for user
 export const getUserBookings = async (userId) => {
   try {
     const token = localStorage.getItem("jwtToken"); // 👈 get token from localStorage
@@ -198,18 +190,17 @@ export const getUserBookings = async (userId) => {
       },
     });
 
-    if (!res.ok) throw new Error("Failed to fetch user bookings");
+    if (!res.ok) toast.error("Failed to fetch user bookings");
 
     return await res.json();
   } catch (error) {
-    console.error("❌ getUserBookings:", error);
+    console.error("getUserBookings:", error);
     throw error;
   }
 };
 
-// ===============================
-// 🎟️ Get tickets by booking
-// ===============================
+//  Get tickets by booking
+
 export const getUserTickets = async (userId, bookingId) => {
   try {
     const token = localStorage.getItem("jwtToken"); // 👈 get token from localStorage
@@ -222,18 +213,16 @@ export const getUserTickets = async (userId, bookingId) => {
       },
     });
 
-    if (!res.ok) throw new Error("Failed to fetch tickets");
+    if (!res.ok) toast.error("Failed to fetch tickets");
 
     return await res.json();
   } catch (error) {
-    console.error("❌ getUserTickets:", error);
+    console.error(" getUserTickets:", error);
     throw error;
   }
 };
 
-// ===============================
-// ❌ Cancel booking
-// ===============================
+// Cancel booking
 export const cancelBookingAPI = async (bookingId) => {
   try {
     const token = localStorage.getItem("jwtToken"); // 👈 get token from localStorage
@@ -255,10 +244,12 @@ export const cancelBookingAPI = async (bookingId) => {
       throw new Error(message);
     }
 
-    toast.success(data.message || "Booking cancelled successfully");
+    toast.success(
+      extractMessage(data.message) || "Booking cancelled successfully"
+    );
     return data;
   } catch (error) {
-    console.error("❌ cancelBookingAPI Error:", error.message);
+    console.error("cancelBookingAPI Error:", error.message);
     toast.error(error.message || "Failed to cancel booking");
     throw error;
   }

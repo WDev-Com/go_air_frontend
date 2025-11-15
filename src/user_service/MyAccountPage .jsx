@@ -36,7 +36,7 @@ const MyAccountPage = () => {
   useEffect(() => {
     dispatch(fetchUserByUsername(username));
   }, []);
-
+  // console.log(userDetails);
   useEffect(() => {
     if (username && !userDetails) {
       dispatch(fetchUserByUsername(username));

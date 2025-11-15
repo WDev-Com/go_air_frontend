@@ -28,15 +28,10 @@ export const cancelUserBooking = createAsyncThunk(
 // ✅ Fetch user bookings
 export const fetchUserBookings = createAsyncThunk(
   "user/fetchUserBookings",
-  async (_, { getState, rejectWithValue }) => {
+  async (userID, { rejectWithValue }) => {
     try {
-      const state = getState();
-      const user = selectUserDetails(state);
-      // console.log("Fetching bookings for user:", user?.userID);
-
-      if (!user?.userID) return rejectWithValue("User ID not found");
-
-      const data = await getUserBookings(user.userID);
+      if (!userID) return rejectWithValue("User ID not found");
+      const data = await getUserBookings(userID);
       return data;
     } catch (error) {
       return rejectWithValue(error.message);
@@ -206,6 +201,7 @@ const userSlice = createSlice({
       })
       .addCase(bookFlight.fulfilled, (state, action) => {
         state.loading = false;
+        console.log("action.payload : ", action.payload);
         state.bookingResponse = action.payload;
       })
       .addCase(bookFlight.rejected, (state, action) => {

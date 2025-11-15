@@ -1,9 +1,12 @@
+import { toast } from "react-toastify";
+import { extractMessage } from "../user_service/userAPI";
+
 const BASE_URL = "http://localhost:8080/admin";
 
 // Fetch bookings by filters
 export const fetchAllBookingsAPI = async (filters = {}) => {
   const params = new URLSearchParams();
-  const token = localStorage.getItem("jwtToken"); // 👈 get token from localStorage
+  const token = localStorage.getItem("jwtToken");
 
   Object.entries(filters).forEach(([key, value]) => {
     if (value) params.append(key, value);
@@ -15,19 +18,19 @@ export const fetchAllBookingsAPI = async (filters = {}) => {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
-        ...(token && { Authorization: `Bearer ${token}` }), // ✅ attach token if available
+        ...(token && { Authorization: `Bearer ${token}` }),
       },
     }
   );
 
   if (!response.ok) {
-    throw new Error("Failed to fetch bookings");
+    toast.error("Failed to fetch bookings");
   }
 
   return await response.json();
 };
 
-// ✅ Unified API request helper with proper error handling
+// Unified API request helper with proper error handling
 export const apiRequest = async (endpoint, method = "GET", body = null) => {
   try {
     const token = localStorage.getItem("jwtToken"); // 👈 get token from localStorage
@@ -36,13 +39,13 @@ export const apiRequest = async (endpoint, method = "GET", body = null) => {
       method,
       headers: {
         "Content-Type": "application/json",
-        ...(token && { Authorization: `Bearer ${token}` }), // ✅ attach token if available
+        ...(token && { Authorization: `Bearer ${token}` }), // attach token if available
       },
 
       body: body ? JSON.stringify(body) : null,
     });
 
-    // ✅ Determine response content type
+    //  Determine response content type
     const contentType = response.headers.get("content-type");
     let data;
 
@@ -52,18 +55,18 @@ export const apiRequest = async (endpoint, method = "GET", body = null) => {
       data = await response.text(); // handle plain text messages
     }
 
-    // console.log("✅ API Response:", data);
-
     if (!response.ok) {
-      // ✅ If backend sends plain text, ensure we throw properly
+      // If backend sends plain text, ensure we throw properly
       throw new Error(
-        typeof data === "string" ? data : data?.message || "Unknown error"
+        typeof data === "string"
+          ? data
+          : extractMessage(data?.message) || "Unknown error"
       );
     }
 
     return data;
   } catch (error) {
-    console.error("❌ API Error:", error.message);
+    console.error("❌ API Error:", extractMessage(error.message));
     throw error;
   }
 };
@@ -134,9 +137,7 @@ export const deleteFlightAPI = async (flightNumber) => {
   }
 };
 
-// ===============================
-// 💺 SEATS API FUNCTIONS
-// ===============================
+// SEATS API FUNCTIONS
 export const generateSeatsAPI = async (flightNo) => {
   try {
     return await apiRequest(`/generate-seats/${flightNo}`, "POST");

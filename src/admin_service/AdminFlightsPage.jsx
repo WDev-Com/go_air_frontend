@@ -30,7 +30,7 @@ import {
   deleteFlight,
 } from "./adminSlice";
 import FilterPanel from "./FilterPanel";
-
+import ConfirmModal from "../component/ConfirmModal";
 const AdminFlightsPage = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -116,26 +116,38 @@ const AdminFlightsPage = () => {
     navigate(`/admin/edit-flight/${id}`);
   };
 
-  const handleDeleteFlight = async (flightNumber) => {
-    if (
-      window.confirm(`Are you sure you want to delete flight ${flightNumber}?`)
-    ) {
-      try {
-        await dispatch(deleteFlight(flightNumber));
-        dispatch(fetchFlights(filters)); // Refresh list
-        setSnackbar({
-          open: true,
-          message: `Flight ${flightNumber} deleted successfully.`,
-          severity: "success",
-        });
-      } catch (error) {
-        setSnackbar({
-          open: true,
-          message: `Failed to delete flight ${flightNumber}.`,
-          severity: "error",
-        });
-      }
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [selectedFlight, setSelectedFlight] = useState(null);
+
+  const handleDeleteFlight = (flightNumber) => {
+    setSelectedFlight(flightNumber);
+    setConfirmOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    try {
+      await dispatch(deleteFlight(selectedFlight));
+      dispatch(fetchFlights(filters)); // Refresh list
+      setSnackbar({
+        open: true,
+        message: `Flight ${selectedFlight} deleted successfully.`,
+        severity: "success",
+      });
+    } catch (error) {
+      setSnackbar({
+        open: true,
+        message: `Failed to delete flight ${selectedFlight}.`,
+        severity: "error",
+      });
+    } finally {
+      setConfirmOpen(false);
+      setSelectedFlight(null);
     }
+  };
+
+  const handleCancelDelete = () => {
+    setConfirmOpen(false);
+    setSelectedFlight(null);
   };
 
   // console.log(loading);
@@ -308,6 +320,17 @@ const AdminFlightsPage = () => {
           </Alert>
         </Snackbar>
       </Box>
+
+      <ConfirmModal
+        open={confirmOpen}
+        title="Confirm Delete"
+        message={`Are you sure you want to delete flight ${selectedFlight}?`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        confirmColor="error"
+        onConfirm={handleConfirmDelete}
+        onCancel={handleCancelDelete}
+      />
     </>
   );
 };

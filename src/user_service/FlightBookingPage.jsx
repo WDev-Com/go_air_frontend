@@ -48,11 +48,13 @@ const FlightBookingPage = () => {
   };
   const currentRouteKey =
     tripType !== "ONE_WAY" ? routeKeys[currentIndex] : null;
+  console.log("currentRouteKey : ", currentRouteKey);
   // Only for maintaining reference of current flight in multi-city
   const currentFlight = selectedFlights[currentRouteKey];
 
   // === BOOKING OBJECT ===
   // Helper to generate alphanumeric booking number (PNR-style)
+  // It is not mandatory this funtionality is handle in backend
   const generateBookingNo = () => {
     const prefix = "GOA"; // or "GA"
     const randomPart = Math.random().toString(36).substring(2, 8).toUpperCase(); // 6 random alphanumeric chars
@@ -302,6 +304,7 @@ const FlightBookingPage = () => {
       )
   );
 
+  // console.log(displayedSeatMap);
   // === FILLED INFO COUNT ===
   const filledInfoCount = passengers.filter(
     (p) => !!p.name?.trim() && !!p.age && !!p.gender
@@ -320,19 +323,66 @@ const FlightBookingPage = () => {
   };
 
   // === BOOKING SUBMISSION ===
+  // const handleBooking = async () => {
+  //   try {
+  //     if (!user?.userID) throw new Error("User not logged in");
+
+  //     if (!bookings || bookings.length === 0)
+  //       throw new Error("No flights selected for booking");
+  //     // console.log("Bookings to submit:", bookings);
+  //     // Ensure every booking has passengers with assigned seats
+  //     bookings.forEach((b, idx) => {
+  //       if (!b.passengers || b.passengers.length === 0) {
+  //         throw new Error(`No passengers added for booking ${idx + 1}`);
+  //       }
+  //       b.passengers.forEach((p, pIdx) => {
+  //         if (!p.seatNo) {
+  //           throw new Error(
+  //             `Seat not selected for passenger ${p.name} on flight ${b.flightNumber}`
+  //           );
+  //         }
+  //       });
+  //     });
+  //     setBookingLoading(true);
+  //     // Prepare payload for backend
+  //     const bookingPayload =
+  //       tripType === "ONE_WAY"
+  //         ? [bookings[0]] // single flight
+  //         : bookings.map((b) => ({
+  //             ...b,
+  //             tripType, // include the overall trip type
+  //           }));
+
+  //     // Call Redux asyncThunk
+  //     const result = await dispatch(
+  //       bookFlight({ userID: user.userID, bookingData: bookingPayload })
+  //     ).unwrap();
+
+  //     // console.log("Booking successful:", result);
+
+  //     navigate("/booking-completed", { state: result });
+  //   } catch (err) {
+  //     console.error("Booking failed:", err);
+  //     alert(err.message || "Booking failed. Please check your inputs.");
+  //   } finally {
+  //     setBookingLoading(false);
+  //   }
+  // };
+
+  // === BOOKING SUBMISSION ===
   const handleBooking = async () => {
     try {
       if (!user?.userID) throw new Error("User not logged in");
 
       if (!bookings || bookings.length === 0)
         throw new Error("No flights selected for booking");
-      // console.log("Bookings to submit:", bookings);
+
       // Ensure every booking has passengers with assigned seats
       bookings.forEach((b, idx) => {
         if (!b.passengers || b.passengers.length === 0) {
           throw new Error(`No passengers added for booking ${idx + 1}`);
         }
-        b.passengers.forEach((p, pIdx) => {
+        b.passengers.forEach((p) => {
           if (!p.seatNo) {
             throw new Error(
               `Seat not selected for passenger ${p.name} on flight ${b.flightNumber}`
@@ -340,24 +390,37 @@ const FlightBookingPage = () => {
           }
         });
       });
+
       setBookingLoading(true);
-      // Prepare payload for backend
+
+      // Prepare payload
       const bookingPayload =
         tripType === "ONE_WAY"
-          ? [bookings[0]] // single flight
-          : bookings.map((b) => ({
-              ...b,
-              tripType, // include the overall trip type
-            }));
+          ? [bookings[0]]
+          : bookings.map((b) => ({ ...b, tripType }));
+      const token = localStorage.getItem("jwtToken");
+      // ✅ Create checkout session and get Stripe URL
+      console.log("bookingPayload : ", bookingPayload);
+      // dispatch(bookFlight(user.userID, bookingPayload));
+      const res = await fetch(
+        `http://localhost:8080/api/payment/create-checkout-session/${user.userID}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token && { Authorization: `Bearer ${token}` }),
+          },
+          body: JSON.stringify(bookingPayload),
+        }
+      );
 
-      // Call Redux asyncThunk
-      const result = await dispatch(
-        bookFlight({ userID: user.userID, bookingData: bookingPayload })
-      ).unwrap();
+      const data = await res.json();
 
-      // console.log("Booking successful:", result);
+      if (!res.ok)
+        throw new Error(data.error || "Failed to create checkout session");
 
-      navigate("/booking-completed", { state: result });
+      // Redirect to Stripe checkout
+      window.location.href = data.url;
     } catch (err) {
       console.error("Booking failed:", err);
       alert(err.message || "Booking failed. Please check your inputs.");
@@ -475,9 +538,11 @@ const FlightBookingPage = () => {
           }}
         >
           Select Seats For{" "}
-          {tripType !== "ONE_WAY"
-            ? currentRouteKey.replace(/_/g, " to ")
-            : `${selectedFlights[currentIndex]?.sourceAirport} → ${selectedFlights[currentIndex]?.destinationAirport}`}
+          {tripType === "ONE_WAY"
+            ? Object.keys(selectedFlights).map((key) =>
+                key.replace(/_/g, " to ")
+              )
+            : `${currentFlight?.sourceAirport} → ${currentFlight?.destinationAirport}`}
         </Typography>
 
         <Box sx={{ flex: 1, overflowY: "auto", p: 2 }}>

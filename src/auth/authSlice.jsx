@@ -8,6 +8,7 @@ const initialState = {
   role: null,
   usernameAvailable: null,
   status: "idle",
+  signOutStatus: false,
   error: null,
 };
 
@@ -67,7 +68,7 @@ const authSlice = createSlice({
       const role = localStorage.getItem("role");
       const user = localStorage.getItem("user");
 
-      if (jwtToken && user) {
+      if (jwtToken && user && state.signOutStatus == false) {
         state.jwtToken = jwtToken;
         state.refreshToken = refreshToken;
         state.role = role;
@@ -84,6 +85,7 @@ const authSlice = createSlice({
       })
       .addCase(loginUserAsync.fulfilled, (state, action) => {
         state.status = "idle";
+        state.signOutStatus = false;
         state.user = action.payload.username;
         state.jwtToken = action.payload.jwtToken;
         state.refreshToken = action.payload.refreshToken;
@@ -102,6 +104,7 @@ const authSlice = createSlice({
       })
       .addCase(signupUserAsync.fulfilled, (state, action) => {
         state.status = "idle";
+        state.signOutStatus = false;
         state.user = action.payload.userID;
         state.error = null;
       })
@@ -119,6 +122,7 @@ const authSlice = createSlice({
         state.user = null;
         state.jwtToken = null;
         state.refreshToken = null;
+        state.signOutStatus = true;
         state.role = null;
         state.error = null;
       })

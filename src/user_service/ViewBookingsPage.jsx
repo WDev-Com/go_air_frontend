@@ -39,20 +39,8 @@ const BookingsPage = () => {
   const [selectedBookingNo, setSelectedBookingNo] = useState(null);
 
   useEffect(() => {
-    dispatch(fetchUserBookings());
-  }, []);
-
-  // useEffect(() => {
-  //   if (!user && username) {
-  //     dispatch(fetchUserByUsername(username));
-  //   }
-  // }, [dispatch, user, username]);
-
-  // useEffect(() => {
-  //   if (user?.userID) {
-  //     dispatch(fetchUserBookings());
-  //   }
-  // }, [dispatch, user?.userID]);
+    dispatch(fetchUserBookings(user.userID));
+  }, [dispatch]);
 
   const handleCancel = (bookingNo) => {
     setSelectedBookingNo(bookingNo);
@@ -87,7 +75,6 @@ const BookingsPage = () => {
     maxHeight: "80vh",
     overflowY: "auto",
   };
-
   if (loading) {
     return (
       <Box

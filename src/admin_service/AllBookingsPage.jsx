@@ -139,39 +139,53 @@ const AllBookingsPage = () => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {bookings
-                    .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                    .map((b) => (
-                      <TableRow key={b.id}>
-                        <TableCell>{b.bookingNo}</TableCell>
-                        <TableCell>{b.userID}</TableCell>
-                        <TableCell>{b.username}</TableCell>
-                        <TableCell>{b.flightNumber}</TableCell>
-                        <TableCell>{b.tripType.replace("_", " ")}</TableCell>
-                        <TableCell>{b.departureDate}</TableCell>
-                        <TableCell>{b.departureTime}</TableCell>
-                        <TableCell>{b.arrivalDate}</TableCell>
-                        <TableCell>{b.arrivalTime}</TableCell>
-                        <TableCell>{b.contactEmail}</TableCell>
-                        <TableCell>{b.passengerCount}</TableCell>
-                        <TableCell>{b.totalAmount}</TableCell>
-                        <TableCell>{b.status}</TableCell>
-                        <TableCell>{b.specialFareType}</TableCell>
-                        <TableCell>{b.journeyStatus}</TableCell>
-                        <TableCell>
-                          {" "}
-                          {new Date(b.bookingTime).toLocaleString("en-IN", {
-                            day: "2-digit",
-                            month: "short",
-                            year: "numeric",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                            second: "2-digit",
-                            hour12: true,
-                          })}
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                  {bookings.length === 0 ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={16}
+                        align="center"
+                        sx={{ py: 4, fontSize: "18px" }}
+                      >
+                        🚫 No bookings found
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    bookings
+                      .slice(
+                        page * rowsPerPage,
+                        page * rowsPerPage + rowsPerPage
+                      )
+                      .map((b) => (
+                        <TableRow key={b.id}>
+                          <TableCell>{b.bookingNo}</TableCell>
+                          <TableCell>{b.userID}</TableCell>
+                          <TableCell>{b.username}</TableCell>
+                          <TableCell>{b.flightNumber}</TableCell>
+                          <TableCell>{b.tripType.replace("_", " ")}</TableCell>
+                          <TableCell>{b.departureDate}</TableCell>
+                          <TableCell>{b.departureTime}</TableCell>
+                          <TableCell>{b.arrivalDate}</TableCell>
+                          <TableCell>{b.arrivalTime}</TableCell>
+                          <TableCell>{b.contactEmail}</TableCell>
+                          <TableCell>{b.passengerCount}</TableCell>
+                          <TableCell>{b.totalAmount}</TableCell>
+                          <TableCell>{b.status}</TableCell>
+                          <TableCell>{b.specialFareType}</TableCell>
+                          <TableCell>{b.journeyStatus}</TableCell>
+                          <TableCell>
+                            {new Date(b.bookingTime).toLocaleString("en-IN", {
+                              day: "2-digit",
+                              month: "short",
+                              year: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                              second: "2-digit",
+                              hour12: true,
+                            })}
+                          </TableCell>
+                        </TableRow>
+                      ))
+                  )}
                 </TableBody>
               </Table>
             </TableContainer>
