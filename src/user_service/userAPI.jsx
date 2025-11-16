@@ -10,6 +10,28 @@ export const extractMessage = (msg) => {
   return match ? match[1].trim() : msg.trim();
 };
 
+// For Autocomplete Functionality
+export const getAirportSuggestionsAPI = async (type, query) => {
+  const token = localStorage.getItem("jwtToken");
+  // console.log("type : ", type, " query : ", query);
+  try {
+    const response = await fetch(
+      `${BASE_URL}/user/airport-suggestions?type=${type}&query=${query}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    let data = await response.json();
+    // console.log("data : ", data);
+    return data;
+  } catch (error) {
+    toast.error(extractMessage(error.message));
+    throw error;
+  }
+};
+
 // Search Flights
 export const searchFlightsAPI = async (params) => {
   const token = localStorage.getItem("jwtToken");

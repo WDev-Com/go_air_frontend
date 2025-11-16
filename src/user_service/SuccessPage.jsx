@@ -94,7 +94,7 @@ export default function SuccessPage() {
     );
 
   const response = paymentDetails.response;
-  console.log(response);
+  // console.log(response);
   return (
     <Box sx={{ p: 4 }}>
       <Paper

@@ -14,8 +14,9 @@ import {
   IconButton,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import ExpandLessIcon from "@mui/icons-material/ExpandLess";
-
+import { useDispatch, useSelector } from "react-redux";
+import { fetchAirportSuggestions, selectairportSuggestion } from "../userSlice";
+import TravellersClassSelector from "./TravellersClassSelector";
 // Trip type display mapping
 const tripTypeMap = {
   ONE_WAY: "One Way",
@@ -43,6 +44,67 @@ const EditableSummaryBar = ({ values = {}, onApply }) => {
 
   const [travAnchor, setTravAnchor] = useState(null);
   const [editingOpen, setEditingOpen] = useState(false);
+
+  const dispatch = useDispatch();
+  const airportSuggestions = useSelector(selectairportSuggestion);
+
+  const [anchorEl, setAnchorEl] = useState(null);
+  const [activeIndex, setActiveIndex] = useState(null);
+  const [autoType, setAutoType] = useState(""); // "from" or "to"
+
+  // Clear autocomplete
+  const clearAutoComplete = () => {
+    dispatch(fetchAirportSuggestions([]));
+    setActiveIndex(null);
+    setAnchorEl(null);
+    setAutoType("");
+  };
+  // console.log("airportSuggestions :", airportSuggestions);
+
+  // Handle Input change
+  const handleInputChange = (value, index, type, event) => {
+    const key = type === "from" ? "sourceAirports" : "destinationAirports";
+    const arr = local[key] ? local[key].split(",") : [];
+    arr[index] = value;
+
+    handleChange(key, arr.join(","));
+    setActiveIndex(index);
+    setAutoType(type);
+
+    // FIX — attach autocomplete popover to the active input
+    // prefer using event.currentTarget if available (the input element)
+    if (event && event.currentTarget) {
+      setAnchorEl(event.currentTarget);
+    } else if (event && event.target) {
+      setAnchorEl(event.target);
+    }
+
+    if (value.trim() === "") {
+      clearAutoComplete();
+      return;
+    }
+
+    if (value.length >= 2) {
+      dispatch(
+        fetchAirportSuggestions({
+          type: type === "from" ? "source" : "destination",
+          query: value,
+        })
+      );
+    }
+  };
+
+  // Select airport from suggestion
+  const selectAirport = (airport) => {
+    if (!autoType || activeIndex === null) return;
+
+    const key = autoType === "from" ? "sourceAirports" : "destinationAirports";
+    const arr = local[key] ? local[key].split(",") : [];
+    arr[activeIndex] = airport;
+
+    handleChange(key, arr.join(","));
+    clearAutoComplete();
+  };
 
   useEffect(() => {
     const isDifferent = JSON.stringify(values) !== JSON.stringify(local);
@@ -314,13 +376,17 @@ const EditableSummaryBar = ({ values = {}, onApply }) => {
                         size="small"
                         variant="filled"
                         value={fromCity.trim()}
+                        // onChange={(e) =>
+                        //   updateMultiCityField(
+                        //     "sourceAirports",
+                        //     index,
+                        //     e.target.value
+                        //   )
+                        // }
                         onChange={(e) =>
-                          updateMultiCityField(
-                            "sourceAirports",
-                            index,
-                            e.target.value
-                          )
+                          handleInputChange(e.target.value, index, "from", e)
                         }
+                        // removed stale onClick anchor
                         placeholder="Enter origin"
                       />
                     </Grid>
@@ -332,13 +398,17 @@ const EditableSummaryBar = ({ values = {}, onApply }) => {
                         size="small"
                         variant="filled"
                         value={destCities[index]?.trim() || ""}
+                        // onChange={(e) =>
+                        //   updateMultiCityField(
+                        //     "destinationAirports",
+                        //     index,
+                        //     e.target.value
+                        //   )
+                        // }
                         onChange={(e) =>
-                          updateMultiCityField(
-                            "destinationAirports",
-                            index,
-                            e.target.value
-                          )
+                          handleInputChange(e.target.value, index, "to", e)
                         }
+                        // removed stale onClick anchor
                         placeholder="Enter destination"
                       />
                     </Grid>
@@ -393,9 +463,13 @@ const EditableSummaryBar = ({ values = {}, onApply }) => {
                     size="small"
                     variant="filled"
                     value={local.sourceAirports}
+                    // onChange={(e) =>
+                    //   handleChange("sourceAirports", e.target.value)
+                    // }
                     onChange={(e) =>
-                      handleChange("sourceAirports", e.target.value)
+                      handleInputChange(e.target.value, 0, "from", e)
                     }
+                    // removed stale onClick anchor
                     placeholder="City, Airport"
                   />
                 </Grid>
@@ -407,9 +481,13 @@ const EditableSummaryBar = ({ values = {}, onApply }) => {
                     size="small"
                     variant="filled"
                     value={local.destinationAirports}
+                    // onChange={(e) =>
+                    //   handleChange("destinationAirports", e.target.value)
+                    // }
                     onChange={(e) =>
-                      handleChange("destinationAirports", e.target.value)
+                      handleInputChange(e.target.value, 0, "to", e)
                     }
+                    // removed stale onClick anchor
                     placeholder="City, Airport"
                   />
                 </Grid>
@@ -448,19 +526,13 @@ const EditableSummaryBar = ({ values = {}, onApply }) => {
 
           {/* Passengers, Fare Type, Search Button remain same */}
           <Grid container spacing={2} alignItems="center" mt={2}>
-            <Grid item xs={12} sm={6}>
-              <Typography variant="caption">Passengers & Class</Typography>
-              <TextField
-                fullWidth
-                size="small"
-                variant="filled"
-                value={`${local.passengers} Passenger${
-                  local.passengers > 1 ? "s" : ""
-                } — ${local.travelClass}`}
-                onClick={(e) => setTravAnchor(e.currentTarget)}
-                InputProps={{ readOnly: true }}
-              />
-            </Grid>
+            <TravellersClassSelector
+              formData={local}
+              anchorEl={travAnchor}
+              setAnchorEl={setTravAnchor}
+              onTravellerChange={handleTravellerChange}
+              onTravelClassChange={handleTravelClassChange}
+            />
 
             <Grid item xs={12} sm={6}>
               <Typography variant="caption">Fare Type</Typography>
@@ -505,78 +577,42 @@ const EditableSummaryBar = ({ values = {}, onApply }) => {
             </Button>
           </Box>
 
-          {/* Traveller Popup */}
+          {/* Auto Complete Component */}
           <Popover
-            open={Boolean(travAnchor)}
-            anchorEl={travAnchor}
-            onClose={() => setTravAnchor(null)}
-            anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+            open={Boolean(anchorEl && airportSuggestions.length)}
+            anchorEl={anchorEl}
+            onClose={() => {
+              setAnchorEl(null);
+              // don't forget to clear suggestions too
+              clearAutoComplete();
+            }}
+            anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+            disableRestoreFocus
+            disableAutoFocus
+            disableEnforceFocus
           >
-            <Box sx={{ p: 2, width: 320 }}>
-              {["adults", "children", "infants"].map((type) => (
-                <Box key={type} sx={{ mb: 2 }}>
-                  <Typography
-                    fontWeight="bold"
-                    sx={{ textTransform: "capitalize" }}
-                  >
-                    {type === "adults"
-                      ? "ADULTS (12y+)"
-                      : type === "children"
-                      ? "CHILDREN (2y - 12y)"
-                      : "INFANTS (below 2y)"}
-                  </Typography>
-                  <Box
-                    sx={{ display: "flex", gap: 1, flexWrap: "wrap", mt: 1 }}
-                  >
-                    {[...Array(type === "adults" ? 9 : 7).keys()].map((num) => (
-                      <Button
-                        key={num}
-                        variant={
-                          local.travellers[type] === num
-                            ? "contained"
-                            : "outlined"
-                        }
-                        size="small"
-                        onClick={() => handleTravellerChange(type, num)}
-                        sx={{ borderRadius: 2, minWidth: 36 }}
-                      >
-                        {num}
-                      </Button>
-                    ))}
-                  </Box>
-                </Box>
+            <Box sx={{ p: 1, width: 250, maxHeight: 200, overflowY: "auto" }}>
+              {airportSuggestions.map((item, idx) => (
+                <MenuItem
+                  key={idx}
+                  onClick={() =>
+                    // if item is a string or object, tries to support both shapes:
+                    selectAirport(
+                      typeof item === "string" ? item : item.airportName || item
+                    )
+                  }
+                >
+                  {typeof item === "string"
+                    ? item
+                    : `${item.airportName || item} — ${item.cityName || ""}`}
+                </MenuItem>
               ))}
 
-              <Typography fontWeight="bold" sx={{ mb: 1 }}>
-                CHOOSE TRAVEL CLASS
-              </Typography>
-              <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
-                {["Economy", "Premium Economy", "Business", "First Class"].map(
-                  (cls) => (
-                    <Button
-                      key={cls}
-                      variant={
-                        local.travelClass === cls ? "contained" : "outlined"
-                      }
-                      size="small"
-                      onClick={() => handleTravelClassChange(cls)}
-                      sx={{ borderRadius: 3, textTransform: "none" }}
-                    >
-                      {cls}
-                    </Button>
-                  )
-                )}
-              </Box>
-
-              <Box sx={{ textAlign: "right", mt: 2 }}>
-                <Button
-                  variant="contained"
-                  onClick={() => setTravAnchor(null)}
-                  sx={{ borderRadius: "999px", px: 3 }}
-                >
-                  Apply
-                </Button>
-              </Box>
+              {!airportSuggestions.length && (
+                <Typography sx={{ p: 1, fontSize: 12 }}>
+                  No airports found
+                </Typography>
+              )}
             </Box>
           </Popover>
         </Box>

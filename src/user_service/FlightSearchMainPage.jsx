@@ -11,18 +11,29 @@ import {
   Grid,
   ToggleButtonGroup,
   ToggleButton,
-  Popover,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchFlights, selectFlights } from "./userSlice";
+
+import {
+  fetchAirportSuggestions,
+  fetchFlights,
+  selectairportSuggestion,
+} from "./userSlice";
+
+import TravellersClassSelector from "./components/TravellersClassSelector";
 
 const FlightSearchUI = () => {
-  const [anchorEl, setAnchorEl] = useState(null);
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  // ✅ All form fields in one state
+  const airportSuggestions = useSelector(selectairportSuggestion);
+
+  const [anchorEl, setAnchorEl] = useState(null);
+  const [activeIndex, setActiveIndex] = useState(null);
+  const [autoType, setAutoType] = useState(""); // "from" or "to"
+
+  // MASTER FORM DATA
   const [formData, setFormData] = useState({
     tripType: "ONE_WAY",
     sourceAirports: "",
@@ -39,70 +50,152 @@ const FlightSearchUI = () => {
     passengers: 1,
   });
 
-  // ✅ Common change handler
   const handleChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  // ✅ Search handler
-  const handleSearch = async () => {
-    if (!formData.sourceAirports || !formData.destinationAirports) {
-      alert("Please select both source and destination airports.");
+  const clearAutoComplete = () => {
+    dispatch(fetchAirportSuggestions([]));
+    setActiveIndex(null);
+  };
+
+  //  AUTOCOMPLETE INPUT HANDLER
+  const handleInputChange = (value, index, type) => {
+    const key = type === "from" ? "sourceAirports" : "destinationAirports";
+
+    const arr = formData[key] ? formData[key].split(",") : [];
+    arr[index] = value;
+
+    handleChange(key, arr.join(","));
+    setActiveIndex(index);
+    setAutoType(type);
+
+    // 🔥 FIX: CLEAR suggestions when empty
+    if (value.trim() === "") {
+      dispatch(fetchAirportSuggestions([])); // clear suggestions
+      setActiveIndex(null);
       return;
     }
 
-    const totalPassengers =
+    // Fetch suggestions only if 2+ chars
+    if (value.length >= 2) {
+      dispatch(
+        fetchAirportSuggestions({
+          type: type === "from" ? "source" : "destination",
+          query: value,
+        })
+      );
+    }
+  };
+
+  // SELECT AUTOCOMPLETE OPTION
+  const selectAirport = (airport) => {
+    if (!autoType || activeIndex === null) return;
+
+    const key = autoType === "from" ? "sourceAirports" : "destinationAirports";
+
+    const arr = formData[key] ? formData[key].split(",") : [];
+    arr[activeIndex] = airport;
+
+    handleChange(key, arr.join(","));
+
+    // close dropdown
+    setActiveIndex(null);
+    setAutoType("");
+    dispatch(fetchAirportSuggestions([]));
+  };
+
+  // ADD CITY ROW
+  const addCityRow = () => {
+    setFormData((prev) => ({
+      ...prev,
+      sourceAirports: prev.sourceAirports + ",",
+      destinationAirports: prev.destinationAirports + ",",
+      departureDates: prev.departureDates + ",",
+    }));
+  };
+
+  // REMOVE CITY ROW
+  const removeCityRow = (index) => {
+    const fromArr = formData.sourceAirports.split(",");
+    const toArr = formData.destinationAirports.split(",");
+    const depArr = formData.departureDates.split(",");
+
+    fromArr.splice(index, 1);
+    toArr.splice(index, 1);
+    depArr.splice(index, 1);
+
+    setFormData((prev) => ({
+      ...prev,
+      sourceAirports: fromArr.join(","),
+      destinationAirports: toArr.join(","),
+      departureDates: depArr.join(","),
+    }));
+  };
+
+  // SEARCH BUTTON
+  const handleSearch = async () => {
+    if (!formData.sourceAirports || !formData.destinationAirports) {
+      alert("Please enter both source and destination!");
+      return;
+    }
+
+    const passengers =
       formData.travellers.adults +
       formData.travellers.children +
       formData.travellers.infants;
 
-    const flightSearchData = {
+    const payload = {
       tripType: formData.tripType,
       sourceAirports: formData.sourceAirports,
       destinationAirports: formData.destinationAirports,
       departureDates: formData.departureDates,
       returnDate: formData.returnDate,
-      passengers: totalPassengers,
+      passengers,
       specialFareType: formData.specialFareType,
     };
 
-    // console.log("Sending to fetchFlights:", flightSearchData);
     try {
-      await dispatch(fetchFlights(flightSearchData)).unwrap();
+      await dispatch(fetchFlights(payload)).unwrap();
       navigate("/flight-search-results", {
         state: { searchParams: formData },
       });
-    } catch (error) {
-      console.error("Error fetching flights:", error);
-      alert("Failed to fetch flights. Please try again.");
+    } catch (err) {
+      alert("Failed to fetch flights.");
     }
   };
 
-  // Update passengers whenever travellers change
+  // Update total passengers
   useEffect(() => {
-    setFormData((prev) => ({
-      ...prev,
-      passengers:
-        prev.travellers.adults +
-        prev.travellers.children +
-        prev.travellers.infants,
-    }));
+    const p =
+      formData.travellers.adults +
+      formData.travellers.children +
+      formData.travellers.infants;
+
+    handleChange("passengers", p);
   }, [formData.travellers]);
 
-  const flights = useSelector(selectFlights);
+  const sourceArr = formData.sourceAirports
+    ? formData.sourceAirports.split(",")
+    : [""];
+
+  const destArr = formData.destinationAirports
+    ? formData.destinationAirports.split(",")
+    : [""];
+
+  const depArr = formData.departureDates
+    ? formData.departureDates.split(",")
+    : [""];
 
   return (
     <Box
       sx={{
         display: "flex",
         justifyContent: "center",
-        alignItems: "center",
         py: 5,
         backgroundImage:
           "url(https://images.unsplash.com/photo-1526772662000-3f88f10405ff?auto=format&fit=crop&w=1920&q=80)",
         backgroundSize: "cover",
-        backgroundPosition: "center",
-        minHeight: "100vh",
       }}
     >
       <Paper
@@ -110,8 +203,8 @@ const FlightSearchUI = () => {
         sx={{
           width: "80%",
           maxWidth: 1200,
-          borderRadius: 4,
           p: 3,
+          borderRadius: 4,
           bgcolor: "rgba(255,255,255,0.95)",
         }}
       >
@@ -139,149 +232,259 @@ const FlightSearchUI = () => {
           />
         </RadioGroup>
 
-        {/* Main Fields */}
-        <Grid container spacing={2} alignItems="center">
-          {formData.tripType === "MULTI_CITY" ? (
-            <>
-              {formData.sourceAirports.split(",").map((fromCity, index) => (
-                <Grid
-                  container
-                  spacing={2}
-                  alignItems="center"
-                  key={index}
-                  sx={{ mb: 1 }}
-                >
-                  <Grid item xs={12} sm={3}>
-                    <Typography variant="subtitle2">From</Typography>
-                    <TextField
-                      fullWidth
-                      size="small"
-                      value={fromCity.trim()}
-                      onChange={(e) => {
-                        const fromArr = formData.sourceAirports.split(",");
-                        fromArr[index] = e.target.value;
-                        handleChange("sourceAirports", fromArr.join(","));
-                      }}
-                      placeholder="Enter origin"
-                    />
-                  </Grid>
-
-                  <Grid item xs={12} sm={3}>
-                    <Typography variant="subtitle2">To</Typography>
-                    <TextField
-                      fullWidth
-                      size="small"
-                      value={
-                        formData.destinationAirports
-                          .split(",")
-                          [index]?.trim() || ""
-                      }
-                      onChange={(e) => {
-                        const toArr = formData.destinationAirports.split(",");
-                        toArr[index] = e.target.value;
-                        handleChange("destinationAirports", toArr.join(","));
-                      }}
-                      placeholder="Enter destination"
-                    />
-                  </Grid>
-
-                  <Grid item xs={12} sm={2}>
-                    <Typography variant="subtitle2">Departure</Typography>
-                    <TextField
-                      fullWidth
-                      type="date"
-                      size="small"
-                      value={
-                        formData.departureDates.split(",")[index]?.trim() || ""
-                      }
-                      onChange={(e) => {
-                        const depArr = formData.departureDates.split(",");
-                        depArr[index] = e.target.value;
-                        handleChange("departureDates", depArr.join(","));
-                      }}
-                    />
-                  </Grid>
-
-                  {index > 0 && (
-                    <Grid item xs={12} sm={2}>
-                      <Button
-                        variant="outlined"
-                        color="error"
-                        onClick={() => {
-                          const fromArr = formData.sourceAirports.split(",");
-                          const toArr = formData.destinationAirports.split(",");
-                          const depArr = formData.departureDates.split(",");
-
-                          fromArr.splice(index, 1);
-                          toArr.splice(index, 1);
-                          depArr.splice(index, 1);
-
-                          setFormData((prev) => ({
-                            ...prev,
-                            sourceAirports: fromArr.join(","),
-                            destinationAirports: toArr.join(","),
-                            departureDates: depArr.join(","),
-                          }));
-                        }}
-                        sx={{ mt: 3 }}
-                      >
-                        ✕
-                      </Button>
-                    </Grid>
-                  )}
-                </Grid>
-              ))}
-
-              <Button
-                variant="outlined"
-                onClick={() => {
-                  setFormData((prev) => ({
-                    ...prev,
-                    sourceAirports: prev.sourceAirports
-                      ? prev.sourceAirports + ","
-                      : ",",
-                    destinationAirports: prev.destinationAirports
-                      ? prev.destinationAirports + ","
-                      : ",",
-                    departureDates: prev.departureDates
-                      ? prev.departureDates + ","
-                      : ",",
-                  }));
-                }}
-                sx={{ mt: 1, textTransform: "none" }}
+        {/* MULTI CITY MODE */}
+        {formData.tripType === "MULTI_CITY" ? (
+          <>
+            {sourceArr.map((src, index) => (
+              <Grid
+                container
+                spacing={2}
+                key={index}
+                sx={{ mb: 1, alignItems: "center" }}
               >
-                + Add Another City
-              </Button>
-            </>
-          ) : (
-            <Grid container spacing={2} alignItems="center">
+                {/* FROM */}
+                <Grid item xs={12} sm={3}>
+                  <Typography variant="subtitle2">From</Typography>
+
+                  <Box sx={{ position: "relative" }}>
+                    <TextField
+                      fullWidth
+                      size="small"
+                      value={src || ""}
+                      onChange={(e) =>
+                        handleInputChange(e.target.value, index, "from")
+                      }
+                      placeholder="Enter origin"
+                      onFocus={() => {
+                        clearAutoComplete();
+                        setAutoType("from");
+                      }}
+                      inputProps={{ autoComplete: "off" }}
+                    />
+
+                    {autoType === "from" &&
+                      activeIndex === index &&
+                      airportSuggestions.length > 0 && (
+                        <Paper
+                          sx={{
+                            position: "absolute",
+                            top: "42px",
+                            left: 0,
+                            right: 0,
+                            zIndex: 999,
+                            maxHeight: 200,
+                            overflowY: "auto",
+                          }}
+                        >
+                          {airportSuggestions.map((a, i) => (
+                            <Box
+                              key={i}
+                              sx={{
+                                p: 1,
+                                cursor: "pointer",
+                                "&:hover": { background: "#eee" },
+                              }}
+                              onClick={() => selectAirport(a)}
+                            >
+                              {a}
+                            </Box>
+                          ))}
+                        </Paper>
+                      )}
+                  </Box>
+                </Grid>
+
+                {/* TO */}
+                <Grid item xs={12} sm={3}>
+                  <Typography variant="subtitle2">To</Typography>
+
+                  <Box sx={{ position: "relative" }}>
+                    <TextField
+                      fullWidth
+                      size="small"
+                      value={destArr[index] || ""}
+                      onChange={(e) =>
+                        handleInputChange(e.target.value, index, "to")
+                      }
+                      placeholder="Enter destination"
+                      onFocus={() => {
+                        setAutoType("to");
+                        clearAutoComplete();
+                      }}
+                      inputProps={{ autoComplete: "off" }}
+                    />
+
+                    {autoType === "to" &&
+                      activeIndex === index &&
+                      airportSuggestions.length > 0 && (
+                        <Paper
+                          sx={{
+                            position: "absolute",
+                            top: "42px",
+                            left: 0,
+                            right: 0,
+                            zIndex: 999,
+                            maxHeight: 200,
+                            overflowY: "auto",
+                          }}
+                        >
+                          {airportSuggestions.map((a, i) => (
+                            <Box
+                              key={i}
+                              sx={{
+                                p: 1,
+                                cursor: "pointer",
+                                "&:hover": { background: "#eee" },
+                              }}
+                              onClick={() => selectAirport(a)}
+                            >
+                              {a}
+                            </Box>
+                          ))}
+                        </Paper>
+                      )}
+                  </Box>
+                </Grid>
+
+                {/* DATE */}
+                <Grid item xs={12} sm={3}>
+                  <Typography variant="subtitle2">Departure</Typography>
+                  <TextField
+                    fullWidth
+                    type="date"
+                    size="small"
+                    value={depArr[index] || ""}
+                    onChange={(e) => {
+                      const arr = [...depArr];
+                      arr[index] = e.target.value;
+                      handleChange("departureDates", arr.join(","));
+                    }}
+                  />
+                </Grid>
+
+                {/* REMOVE */}
+                {index > 0 && (
+                  <Grid item xs={12} sm={2}>
+                    <Button color="error" onClick={() => removeCityRow(index)}>
+                      ✕
+                    </Button>
+                  </Grid>
+                )}
+              </Grid>
+            ))}
+
+            <Button onClick={addCityRow} sx={{ mt: 1 }}>
+              + Add Another City
+            </Button>
+          </>
+        ) : (
+          <>
+            {/* ONE WAY / ROUND TRIP */}
+            <Grid container spacing={2}>
+              {/* From */}
               <Grid item xs={12} sm={3}>
                 <Typography variant="subtitle2">From</Typography>
-                <TextField
-                  fullWidth
-                  size="small"
-                  value={formData.sourceAirports}
-                  onChange={(e) =>
-                    handleChange("sourceAirports", e.target.value)
-                  }
-                  placeholder="Enter origin"
-                />
+
+                <Box sx={{ position: "relative" }}>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    value={sourceArr[0] || ""}
+                    onChange={(e) =>
+                      handleInputChange(e.target.value, 0, "from")
+                    }
+                    placeholder="Enter origin"
+                    onFocus={() => {
+                      setAutoType("from");
+                      clearAutoComplete();
+                    }}
+                    inputProps={{ autoComplete: "off" }}
+                  />
+
+                  {autoType === "from" &&
+                    activeIndex === 0 &&
+                    airportSuggestions.length > 0 && (
+                      <Paper
+                        sx={{
+                          position: "absolute",
+                          top: "42px",
+                          left: 0,
+                          right: 0,
+                          zIndex: 999,
+                          maxHeight: 200,
+                          overflowY: "auto",
+                        }}
+                      >
+                        {airportSuggestions.map((a, i) => (
+                          <Box
+                            key={i}
+                            sx={{
+                              p: 1,
+                              cursor: "pointer",
+                              "&:hover": { background: "#eee" },
+                            }}
+                            onClick={() => selectAirport(a)}
+                          >
+                            {a}
+                          </Box>
+                        ))}
+                      </Paper>
+                    )}
+                </Box>
               </Grid>
 
+              {/* To */}
               <Grid item xs={12} sm={3}>
                 <Typography variant="subtitle2">To</Typography>
-                <TextField
-                  fullWidth
-                  size="small"
-                  value={formData.destinationAirports}
-                  onChange={(e) =>
-                    handleChange("destinationAirports", e.target.value)
-                  }
-                  placeholder="Enter destination"
-                />
+
+                <Box sx={{ position: "relative" }}>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    value={destArr[0] || ""}
+                    onChange={(e) => handleInputChange(e.target.value, 0, "to")}
+                    placeholder="Enter destination"
+                    onFocus={() => {
+                      setAutoType("to");
+                      clearAutoComplete();
+                    }}
+                    inputProps={{ autoComplete: "off" }}
+                  />
+
+                  {autoType === "to" &&
+                    activeIndex === 0 &&
+                    airportSuggestions.length > 0 && (
+                      <Paper
+                        sx={{
+                          position: "absolute",
+                          top: "42px",
+                          left: 0,
+                          right: 0,
+                          zIndex: 999,
+                          maxHeight: 200,
+                          overflowY: "auto",
+                        }}
+                      >
+                        {airportSuggestions.map((a, i) => (
+                          <Box
+                            key={i}
+                            sx={{
+                              p: 1,
+                              cursor: "pointer",
+                              "&:hover": { background: "#eee" },
+                            }}
+                            onClick={() => selectAirport(a)}
+                          >
+                            {a}
+                          </Box>
+                        ))}
+                      </Paper>
+                    )}
+                </Box>
               </Grid>
 
-              <Grid item xs={12} sm={2}>
+              {/* Departure */}
+              <Grid item xs={12} sm={3}>
                 <Typography variant="subtitle2">Departure</Typography>
                 <TextField
                   fullWidth
@@ -294,161 +497,42 @@ const FlightSearchUI = () => {
                 />
               </Grid>
 
-              <Grid item xs={12} sm={2}>
+              {/* Return */}
+              <Grid item xs={12} sm={3}>
                 <Typography variant="subtitle2">Return</Typography>
                 <TextField
                   fullWidth
                   type="date"
                   size="small"
-                  value={formData.returnDate}
                   disabled={formData.tripType === "ONE_WAY"}
+                  value={formData.returnDate}
                   onChange={(e) => handleChange("returnDate", e.target.value)}
                 />
               </Grid>
             </Grid>
-          )}
+          </>
+        )}
 
-          {/* Travellers & Class */}
-          <Grid item xs={12} sm={2}>
-            <Typography variant="subtitle2">Travellers & Class</Typography>
-            <Button
-              variant="outlined"
-              fullWidth
-              onClick={(e) => setAnchorEl(e.currentTarget)}
-              sx={{
-                justifyContent: "space-between",
-                textTransform: "none",
-                fontSize: "0.9rem",
-              }}
-            >
-              {`${
-                formData.travellers.adults +
-                formData.travellers.children +
-                formData.travellers.infants
-              } Traveller${
-                formData.travellers.adults +
-                  formData.travellers.children +
-                  formData.travellers.infants >
-                1
-                  ? "s"
-                  : ""
-              }, ${formData.travellers.travelClass}`}
-            </Button>
-
-            {/* Travellers Popover */}
-            <Popover
-              open={Boolean(anchorEl)}
-              anchorEl={anchorEl}
-              onClose={() => setAnchorEl(null)}
-              anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
-            >
-              <Box sx={{ p: 2, width: 320 }}>
-                {["adults", "children", "infants"].map((type) => (
-                  <Box key={type} sx={{ mb: 2 }}>
-                    <Typography fontWeight="bold">
-                      {type === "adults"
-                        ? "ADULTS (12y+)"
-                        : type === "children"
-                        ? "CHILDREN (2y - 12y)"
-                        : "INFANTS (below 2y)"}
-                    </Typography>
-                    <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
-                      {[...Array(type === "adults" ? 9 : 7).keys()].map(
-                        (num) => (
-                          <Button
-                            key={num}
-                            variant={
-                              formData.travellers[type] === num
-                                ? "contained"
-                                : "outlined"
-                            }
-                            size="small"
-                            onClick={() =>
-                              setFormData((prev) => ({
-                                ...prev,
-                                travellers: { ...prev.travellers, [type]: num },
-                              }))
-                            }
-                            sx={{ borderRadius: 2, minWidth: 36 }}
-                          >
-                            {num}
-                          </Button>
-                        )
-                      )}
-                    </Box>
-                  </Box>
-                ))}
-
-                <Typography fontWeight="bold" sx={{ mb: 1 }}>
-                  CHOOSE TRAVEL CLASS
-                </Typography>
-                <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
-                  {[
-                    "Economy",
-                    "Premium Economy",
-                    "Business",
-                    "First Class",
-                  ].map((cls) => (
-                    <Button
-                      key={cls}
-                      variant={
-                        formData.travellers.travelClass === cls
-                          ? "contained"
-                          : "outlined"
-                      }
-                      size="small"
-                      onClick={() =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          travellers: {
-                            ...prev.travellers,
-                            travelClass: cls,
-                          },
-                        }))
-                      }
-                      sx={{ borderRadius: 3, textTransform: "none" }}
-                    >
-                      {cls}
-                    </Button>
-                  ))}
-                </Box>
-
-                <Box sx={{ textAlign: "right", mt: 2 }}>
-                  <Button
-                    variant="contained"
-                    onClick={() => setAnchorEl(null)}
-                    sx={{
-                      borderRadius: "999px",
-                      px: 3,
-                      textTransform: "none",
-                    }}
-                  >
-                    Apply
-                  </Button>
-                </Box>
-              </Box>
-            </Popover>
-          </Grid>
-        </Grid>
+        {/* Travellers */}
+        <Box sx={{ mt: 2 }}>
+          <TravellersClassSelector
+            formData={formData}
+            setFormData={setFormData}
+            anchorEl={anchorEl}
+            setAnchorEl={setAnchorEl}
+          />
+        </Box>
 
         {/* Special Fare */}
         <Box sx={{ mt: 3 }}>
-          <Typography variant="subtitle2" sx={{ mb: 1 }}>
-            Select a special fare
-          </Typography>
+          <Typography variant="subtitle2">Select a special fare</Typography>
+
           <ToggleButtonGroup
             color="primary"
-            value={formData.specialFareType}
             exclusive
-            onChange={(e, val) => val && handleChange("specialFareType", val)}
-            sx={{
-              flexWrap: "wrap",
-              gap: 1,
-              "& .MuiToggleButton-root": {
-                borderRadius: 3,
-                textTransform: "none",
-              },
-            }}
+            value={formData.specialFareType}
+            onChange={(e, v) => v && handleChange("specialFareType", v)}
+            sx={{ mt: 1 }}
           >
             <ToggleButton value="REGULAR">Regular</ToggleButton>
             <ToggleButton value="STUDENT">Student</ToggleButton>
@@ -462,17 +546,14 @@ const FlightSearchUI = () => {
         </Box>
 
         {/* Search Button */}
-        <Box textAlign="center" sx={{ mt: 3 }}>
+        <Box sx={{ textAlign: "center", mt: 3 }}>
           <Button
             variant="contained"
             size="large"
             sx={{
-              borderRadius: "999px",
-              px: 6,
-              py: 1.2,
+              px: 5,
+              borderRadius: "50px",
               fontWeight: "bold",
-              bgcolor: "#1976d2",
-              "&:hover": { bgcolor: "#115293" },
             }}
             onClick={handleSearch}
           >

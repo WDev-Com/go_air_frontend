@@ -325,6 +325,7 @@ const FlightBookingPage = () => {
     }
   };
 
+  let getResponse = null;
   // === BOOKING SUBMISSION ===
   const handleBooking = async () => {
     try {
@@ -369,7 +370,7 @@ const FlightBookingPage = () => {
           body: JSON.stringify(bookingPayload),
         }
       );
-
+      getResponse = res;
       const data = await res.json();
 
       if (!res.ok)
@@ -380,10 +381,10 @@ const FlightBookingPage = () => {
     } catch (err) {
       console.error("Booking failed:", err);
       alert(err.message || "Booking failed. Please check your inputs.");
-    } finally {
-      setBookingLoading(false);
     }
   };
+
+  if (getResponse?.ok) setBookingLoading(false);
 
   if (bookingLoading)
     return (

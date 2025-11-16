@@ -9,10 +9,11 @@ import {
   getUserBookings,
   getUserTickets,
   cancelBookingAPI,
+  getAirportSuggestionsAPI,
 } from "./userAPI";
 import { toast } from "react-toastify";
 
-// ✅ Cancel booking
+//  Cancel booking
 export const cancelUserBooking = createAsyncThunk(
   "user/cancelUserBooking",
   async (bookingId, { rejectWithValue }) => {
@@ -25,7 +26,7 @@ export const cancelUserBooking = createAsyncThunk(
   }
 );
 
-// ✅ Fetch user bookings
+//  Fetch user bookings
 export const fetchUserBookings = createAsyncThunk(
   "user/fetchUserBookings",
   async (userID, { rejectWithValue }) => {
@@ -39,7 +40,7 @@ export const fetchUserBookings = createAsyncThunk(
   }
 );
 
-// ✅ Fetch user tickets for a booking
+//  Fetch user tickets for a booking
 export const fetchUserTickets = createAsyncThunk(
   "user/fetchUserTickets",
   async (bookingId, { getState, rejectWithValue }) => {
@@ -55,7 +56,7 @@ export const fetchUserTickets = createAsyncThunk(
   }
 );
 
-// ✅ Update user details
+//  Update user details
 export const updateUser = createAsyncThunk(
   "user/updateUser",
   async ({ username, updatedData }, { rejectWithValue }) => {
@@ -68,7 +69,7 @@ export const updateUser = createAsyncThunk(
   }
 );
 
-// ✅ Fetch seats by flight number
+//  Fetch seats by flight number
 export const fetchSeatsByFlightNumber = createAsyncThunk(
   "user/fetchSeatsByFlightNumber",
   async (flightNumber, { rejectWithValue }) => {
@@ -81,7 +82,7 @@ export const fetchSeatsByFlightNumber = createAsyncThunk(
   }
 );
 
-// ✅ Fetch user details
+//  Fetch user details
 export const fetchUserByUsername = createAsyncThunk(
   "user/fetchUserByUsername",
   async (username, { rejectWithValue }) => {
@@ -94,7 +95,7 @@ export const fetchUserByUsername = createAsyncThunk(
   }
 );
 
-// ✅ Fetch flight details
+//  Fetch flight details
 export const fetchFlightByNumber = createAsyncThunk(
   "user/fetchFlightByNumber",
   async (flightNumber, { rejectWithValue }) => {
@@ -107,7 +108,7 @@ export const fetchFlightByNumber = createAsyncThunk(
   }
 );
 
-// ✅ Book flight
+//  Book flight
 export const bookFlight = createAsyncThunk(
   "user/bookFlight",
   async ({ userID, bookingData }, { rejectWithValue }) => {
@@ -133,6 +134,21 @@ export const fetchFlights = createAsyncThunk(
   }
 );
 
+export const fetchAirportSuggestions = createAsyncThunk(
+  "user/fetchAirportSuggestions",
+  async ({ type, query }, { rejectWithValue }) => {
+    try {
+      // console.log("type : ", type, " query : ", query);
+      const data = await getAirportSuggestionsAPI(type, query);
+      return data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data || "Failed to fetch airport suggestions"
+      );
+    }
+  }
+);
+
 const userSlice = createSlice({
   name: "user",
   initialState: {
@@ -143,6 +159,7 @@ const userSlice = createSlice({
     bookings: [],
     tickets: [],
     seats: [],
+    airportSuggestions: [],
     cancelResponse: null,
     showCancelModal: false,
     loading: false,
@@ -247,7 +264,7 @@ const userSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-      // ✅ Bookings
+      // Bookings
       .addCase(fetchUserBookings.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -260,7 +277,7 @@ const userSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-      // ✅ Tickets
+      // Tickets
       .addCase(fetchUserTickets.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -273,7 +290,7 @@ const userSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-      // ✅ Cancel user booking
+      // Cancel user booking
       .addCase(cancelUserBooking.pending, (state) => {
         state.loading = true;
       })
@@ -282,7 +299,7 @@ const userSlice = createSlice({
         const cancelledId = action.payload.bookingId;
         state.cancelResponse = action.payload;
         state.showCancelModal = true;
-        // ✅ Update booking status locally
+        // Update booking status locally
         state.bookings = state.bookings.map((b) =>
           String(b.id) === String(cancelledId)
             ? { ...b, status: "CANCELLED" }
@@ -297,6 +314,19 @@ const userSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
         toast.error(action.payload || "Failed to cancel booking");
+      })
+      // Get Airport Suggestions
+      .addCase(fetchAirportSuggestions.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchAirportSuggestions.fulfilled, (state, action) => {
+        state.loading = false;
+        state.airportSuggestions = action.payload; // store suggestions
+      })
+      .addCase(fetchAirportSuggestions.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
       });
   },
 });
@@ -311,4 +341,5 @@ export const selectBookingResponse = (state) => state.user.bookingResponse;
 export const selectSeats = (state) => state.user.seats;
 export const selectUserBookings = (state) => state.user.bookings;
 export const selectUserTickets = (state) => state.user.tickets;
+export const selectairportSuggestion = (state) => state.user.airportSuggestions;
 export const { closeCancelModal, resetAllUserState } = userSlice.actions;
